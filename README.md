@@ -1,2 +1,2 @@
 # starling
-Demo storage client for archival video data
+Demo CLI interface for storing archival data in Filecoin

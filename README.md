@@ -1,5 +1,5 @@
-# Project Starling
-Demo CLI interface for storing archival data in Filecoin
+# Starling
+A CLI for simplified, coordinated, decentralized storage on the Filecoin network.
 
 ```
       .. .

@@ -1,0 +1,18 @@
+- name: Home
+  link: /
+- name: Overview
+  link: /overview.html
+- name: Getting Started
+  link: /getting-started.html
+- name: CLI Guide
+  link: /cli-guide.html
+- name: Contributing
+  link: /contributing.html
+- name: FAQs and Troubleshooting
+  link: /faqs-and-troubleshooting.html
+- name: Glossary
+  link: /glossary.html
+- name: Credits
+  link: /credits.html
+- name: License
+  link: /license.html

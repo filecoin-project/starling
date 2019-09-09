@@ -1,0 +1,29 @@
+{
+  "name": "starling-cli",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint **/*.js --ignore-pattern node_modules/"
+  },
+  "author": "",
+  "license": "ISC",
+  "bin": {
+    "starling": "./index.js"
+  },
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "commander": "^3.0.0",
+    "filecoin-api-client": "^0.5.1",
+    "fs-extra": "^8.1.0",
+    "inquirer": "^7.0.0",
+    "lodash": "^4.17.15",
+    "mkdirp": "^0.5.1",
+    "progress": "^2.0.3",
+    "sqlite3": "^4.1.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.2.2"
+  }
+}

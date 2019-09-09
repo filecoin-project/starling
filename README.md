@@ -1,6 +1,6 @@
 # Starling
 
-A CLI for simplified, coordinated, decentralized storage on the Filecoin network.
+A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network.
 
 ```
       .. .

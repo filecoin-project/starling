@@ -1,13 +1,8 @@
 ---
-layout: default
+layout: splash
 title: Home
 ---
-<html>
-  <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="/assets/css/styles.css">
-  </head>
-  <body>
-    <h1>Starling</h1>
-  </body>
-</html>
+
+## Simplified & coordinated decentralized storage on the Filecoin network
+
+### Launches October 2019 - sign up for updates…

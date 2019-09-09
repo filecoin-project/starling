@@ -38,7 +38,16 @@ input{
 	padding-right: 30px;
 }
 
+.github{
+	position: absolute;
+	top: 0;
+	right:0;
+	z-index: 150;
+}
 
+.github a{
+	display: inline;
+}
 
 .button{
 	font-family: 'Roboto Mono', monospace !important;

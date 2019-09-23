@@ -279,7 +279,8 @@ function initWebScene() {
   renderer.antialias = true
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  document.body.appendChild(renderer.domElement);
+  let container = document.getElementById('canvas');
+  container.appendChild(renderer.domElement);
   window.addEventListener('resize', onWindowResize, false);
 
   initCompute();

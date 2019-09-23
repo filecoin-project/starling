@@ -36,6 +36,10 @@ Test by running
 
 Starling uses an [sqlite3](https://www.npmjs.com/package/sqlite3) database. The db is created in `HOME/.starling/starling.db`
 
+### Logs
+
+Logs are located in `HOME/.starling/logs/starling.log`
+
 ## Commands
 
 Modify the config file `HOME/.starling/config.json`

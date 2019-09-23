@@ -1,6 +1,6 @@
 # Starling
 
-A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network. This is a work in progress – MVP ships October 5th, and this code is not production-ready. Use at your own risk.
+A CLI for simplified, coordinated, decentralized storage on the Filecoin network.
 
 ```
       .. .
@@ -12,7 +12,7 @@ A command-line interface for simplified, coordinated, decentralized storage on t
 
 ```
 
-## Development
+## Develop
 
 To run locally
 
@@ -36,10 +36,6 @@ Test by running
 
 Starling uses an [sqlite3](https://www.npmjs.com/package/sqlite3) database. The db is created in `HOME/.starling/starling.db`
 
-### Logs
-
-Logs are located in `HOME/.starling/logs/starling.log`
-
 ## Commands
 
 Modify the config file `HOME/.starling/config.json`
@@ -58,6 +54,18 @@ Store a folder
 
 ```js
 > starling store path/to/folder
+```
+
+Launch interactive monitoring interface
+
+```js
+> starling monitor
+```
+
+Generate CSV of all files stored
+
+```js
+> starling list
 ```
 
 Output the version number

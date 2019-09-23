@@ -1,11 +1,9 @@
-const { checkConfig } = require('./checkConfig');
-const { checkHealth } = require('./checkHealth');
-const { createConfig } = require('./createConfig');
 const { store } = require('./store');
+const { list } = require('./list');
+const { monitor } = require('./monitor/monitor');
 
 module.exports = {
-  checkConfig,
-  checkHealth,
-  createConfig,
-  store
+  store,
+  list,
+  monitor
 };

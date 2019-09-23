@@ -7,7 +7,8 @@ const { Logger } = require('./utils');
 const program = new commander.Command();
 program.version('0.4.6', '-v, --version', 'output the current version');
 
-const { checkHealth, createConfig, store } = require('./commands');
+const { store, list, monitor } = require('./commands');
+const { checkHealth, createConfig } = require('./utils');
 
 const fc = Filecoin({
   apiAddr: '/ip4/104.248.115.24/tcp/3453/http'
@@ -16,7 +17,7 @@ const fc = Filecoin({
 async function init() {
   try {
     await checkHealth(fc);
-    console.log('');
+
     program
       .command('store')
       .description('path to file or folder you would like to store')
@@ -28,11 +29,28 @@ async function init() {
 
     program
       .command('monitor')
-      .description('launches interactive monitoring interface');
+      .description('launches interactive monitoring interface')
+      .action(function() {
+        if (process.argv.length > 4) {
+          throw new Error(
+            '\nplease provide 1 argument as the monitor refresh rate in seconds'
+          );
+        } else if (process.argv[3] < 3) {
+          throw new Error('\nplease provide a period of 3 seconds or greater');
+        }
+
+        monitor(fc, process.argv[3]);
+      });
 
     program
       .command('list')
-      .description('outputs a csv of all files  you have stored in filecoin');
+      .description('outputs a csv of all files  you have stored in filecoin')
+      .action(function() {
+        if (process.argv.length > 4) {
+          throw new Error('\nplease provide 1 argument as the directory');
+        }
+        list();
+      });
 
     program
       .command('verify')
@@ -59,7 +77,7 @@ async function init() {
     program.parse(process.argv);
   } catch (err) {
     console.log(err.message);
-    Logger.error(err);
+    Logger.error(err.stack);
   }
 }
 

@@ -1,6 +1,6 @@
 # Starling
 
-A CLI for simplified, coordinated, decentralized storage on the Filecoin network.
+A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network. This is a work in progress – MVP ships October 5th, and this code is not production-ready. Use at your own risk.
 
 ```
       .. .
@@ -12,7 +12,7 @@ A CLI for simplified, coordinated, decentralized storage on the Filecoin network
 
 ```
 
-## Develop
+## Development
 
 To run locally
 

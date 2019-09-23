@@ -33,7 +33,8 @@ function draw(param) {
 function progress({ queued, active }) {
   const progressBarLength = 32;
 
-  const percent = parseInt((active / (queued + active)) * 100, 10);
+  const percent =
+    active === 0 ? active : parseInt((active / (queued + active)) * 100, 10);
   const percentActive = parseInt((percent / 100) * 32, 10);
 
   const drawActive = draw(percentActive);
@@ -72,7 +73,7 @@ async function getMonitorData(fc, db) {
     `Files stored in the network: ${chalk.hex('#A706E2')(files.length)}`,
     `# of miners: ${chalk.hex('#A706E2')(miners.length)}`,
     `Storage space used: ${chalk.hex('#A706E2')(
-      `${formatBytes(space) || '0 Bytes'}`
+      `${space ? formatBytes(space) : '0 Bytes'}`
     )}`,
     `Wallet balance: ${chalk.hex('#A706E2')(`$fil ${walletBalance}`)}`
   ];

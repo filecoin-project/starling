@@ -3,25 +3,31 @@ const path = require('path');
 const { sortBy, size, filter } = require('lodash');
 const chalk = require('chalk');
 
-const { Logger, progress } = require('../utils');
+const {
+  Logger,
+  progress,
+  readConfig,
+  partialProgress,
+  failedProgress
+} = require('../utils');
 const { updateFile, insertFile, connect, close } = require('../db');
-const { checkConfig } = require('./checkConfig');
+const { checkConfig } = require('../utils');
 const { dealTime } = require('../constants/deals');
+const { formatBytes } = require('../utils');
 
 async function getInfo(arg) {
   const stats = await fs.stat(arg);
 
-  const fileSizeInBytes = stats.size;
-  const sizeInMB = fileSizeInBytes / 1000000.0;
+  const fileSize = stats.size;
   const name = path.basename(arg);
 
   if (stats.isFile()) {
-    return Promise.resolve({ status: 'file', name: name, sizeInMB: sizeInMB });
+    return Promise.resolve({ status: 'file', name: name, fileSize: fileSize });
   } else if (stats.isDirectory()) {
     return Promise.resolve({
       status: 'directory',
       name: name,
-      sizeInMB: sizeInMB
+      fileSize: fileSize
     });
   }
 }
@@ -41,21 +47,22 @@ async function checkFileDirectory() {
   }
 }
 
-async function importFile(fc, file, { name, sizeInMB }) {
+async function importFile(fc, file, { name, fileSize }) {
   const cid = await fc.client.import(file);
 
-  return { cid: cid, sizeInMB: sizeInMB, name: name };
+  return [{ cid: cid, fileSize: fileSize, name: name }];
 }
 
-async function importFiles(fc, { status, name, sizeInMB }) {
+async function importFiles(fc, { status, name, fileSize }) {
   const arg = process.argv[3];
+  const formattedSize = formatBytes(fileSize);
 
   if (status === 'file') {
     console.log(`🔍  Indexing file...`);
-    console.log(`${chalk.magenta('==>')} ${sizeInMB} MB`);
-    return await importFile(fc, arg, { name: name, sizeInMB: sizeInMB });
+    console.log(`${chalk.hex('#A706E2')('==>')} ${formattedSize}`);
+    return await importFile(fc, arg, { name: name, fileSize: fileSize });
   } else if (status === 'directory') {
-    Logger.info(`\nThis is directory ${name} of size ${sizeInMB}MB`);
+    Logger.info(`\nThis is directory ${name} of size ${formattedSize}`);
 
     const files = await fs.readdir(arg);
     const allFilesInfo = await Promise.all(
@@ -63,8 +70,8 @@ async function importFiles(fc, { status, name, sizeInMB }) {
     );
 
     console.log(`🔍  Indexing folder...`);
-    console.log(`${chalk.magenta('==>')} ${allFilesInfo.length} files`);
-    console.log(`${chalk.magenta('==>')} ${sizeInMB} MB`);
+    console.log(`${chalk.hex('#A706E2')('==>')} ${allFilesInfo.length} files`);
+    console.log(`${chalk.hex('#A706E2')('==>')} ${formattedSize}`);
 
     return await Promise.all(
       files.map((file, index) =>
@@ -74,7 +81,7 @@ async function importFiles(fc, { status, name, sizeInMB }) {
   }
 }
 
-async function ListAsks(fc) {
+async function getMiners(fc) {
   const list = [];
 
   for await (let item of fc.client.listAsks()) {
@@ -84,13 +91,11 @@ async function ListAsks(fc) {
   return sortBy(list, ['price']);
 }
 
-function updateFileDB(db, name, deal) {
-  updateFile(db, name, deal);
+function updateFileDB(db, name, deal, index) {
+  updateFile(db, name, deal, index);
 }
 
-async function proposeDeal(fc, db, { cid, sizeInMB, name }, miners, bar) {
-  insertFile(db, cid, name, sizeInMB);
-
+async function proposeDeal(fc, db, { cid, name }, miners, index) {
   for (let i = 0; i < size(miners); i++) {
     Logger.info(`storing ${name} with miner ${miners[i].miner}`);
 
@@ -111,60 +116,98 @@ async function proposeDeal(fc, db, { cid, sizeInMB, name }, miners, bar) {
         CID: cid
       };
 
-      bar.tick();
-      Logger.info(deal);
-      updateFileDB(db, name, deal);
+      Logger.info(storageDealProposal);
+      updateFileDB(db, name, deal, index + 1);
 
       return Promise.resolve({ deal: 'accepted' });
     } catch (err) {
       if (err.code === 'ECONNREFUSED') {
         break;
       }
-      Logger.error(err);
+      Logger.error(err.stack);
       continue;
     }
   }
 }
 
-async function ProposeDeals(fc, db, importedFiles, miners) {
-  if (Array.isArray(importedFiles)) {
-    const length = importedFiles.length;
-    const bar = progress(length);
-    bar.tick(0);
+async function ProposeDeals(fc, db, config, importedFiles, miners) {
+  const filesCount = importedFiles.length;
+  const totalCopies = parseInt(config.copies, 10) || 3; // defaults to 3 in case someone manually edits the config file
+  let bar = progress(totalCopies);
+  let acceptedDeals = [];
 
+  bar.tick(0);
+
+  for (let i = 0; i < totalCopies; i++) {
     const deals = await Promise.all(
       importedFiles.map(file => {
-        return proposeDeal(fc, db, file, miners, bar);
+        const FILE = filesCount === 1 ? file : file[0];
+        const { cid, name, fileSize } = FILE;
+        const formattedSize = formatBytes(fileSize);
+
+        insertFile(db, cid, name, fileSize, formattedSize);
+
+        return proposeDeal(fc, db, FILE, miners, i, bar);
       })
     );
 
-    const filtered = filter(deals, { deal: 'accepted' }).length;
+    const accepted = filter(deals, { deal: 'accepted' }).length;
 
-    if (filtered === length) {
-      console.log('\n\n✅  all storage deals successfully made!');
-      console.log(
-        `${chalk.magenta(
-          '==>'
-        )} monitor progress with the "starling monitor" command\n`
-      );
-    } else if (filtered === 0) {
-      console.log('\n\n❌  No one accepted your storage proposals!');
-      console.log(
-        `${chalk.magenta('==>')} try increasing your $ per TB asking price\n`
-      );
+    if (accepted === filesCount) {
+      bar.tick();
+      acceptedDeals[i] = { deal: 'full' };
+    } else if (accepted > 0) {
+      acceptedDeals[i] = { deal: 'partial' };
     } else {
-      console.log(
-        '\n\n⚠️  Only enough deals were made to store one complete copy'
-      );
-      console.log(
-        `${chalk.magenta('==>')} try increasing your $ per TB asking price\n`
-      );
+      acceptedDeals[i] = { deal: 'failed' };
     }
-  } else {
-    const bar = progress(1);
-    bar.tick(0);
+  }
 
-    return await proposeDeal(fc, db, importedFiles, miners, bar);
+  const full = filter(acceptedDeals, { deal: 'full' }).length;
+  const partial = filter(acceptedDeals, { deal: 'partial' }).length;
+  const failed = filter(acceptedDeals, { deal: 'failed' }).length;
+
+  if (full === totalCopies) {
+    console.log('\n\n✅  all storage deals successfully made!');
+    console.log(
+      `${chalk.hex('#A706E2')(
+        '==>'
+      )} monitor progress with the "starling monitor" command\n`
+    );
+  } else if (partial > 0 && full > 0) {
+    bar = partialProgress(totalCopies);
+    bar.tick(full);
+
+    console.log(
+      `\n\n ⚠️ Only enough deals were made to store ${full} complete copies`
+    );
+    console.log(
+      `${chalk.hex('#A706E2')(
+        '==>'
+      )} try increasing your $ per TB asking price\n`
+    );
+  } else if (full === 0 && partial > 0) {
+    bar = partialProgress(totalCopies);
+    bar.tick(partial);
+
+    console.log(
+      `\n\n ⚠️ only enough deals were made to store some of your files`
+    );
+    console.log(
+      `${chalk.hex('#A706E2')(
+        '==>'
+      )} try increasing your $ per TB asking price\n`
+    );
+  } else if (failed === totalCopies) {
+    bar = failedProgress();
+    bar.tick(1);
+
+    console.log('\n\n❌  No one accepted your storage proposals!');
+    console.log(
+      `${chalk.hex('#A706E2')(
+        '==>'
+      )} try increasing your $ per TB asking price\n`
+    );
   }
 }
 
@@ -173,27 +216,30 @@ async function store(fc) {
     const argInfo = await checkFileDirectory(fc);
     const db = await connect();
     await checkConfig();
+    const config = await readConfig();
+
+    const miners = await getMiners(fc);
+    console.clear();
 
     const importedFiles = await importFiles(fc, argInfo);
 
     Logger.info(`\nIMPORTED FILES:`);
     Logger.info(importedFiles);
 
-    const miners = await ListAsks(fc);
+    console.log(
+      `\n📡  making filecoin storage deals for ${config.copies} redundant copies`
+    );
 
-    console.log(`\n📡  making filecoin storage deals for 3 redundant copies`);
-
-    await ProposeDeals(fc, db, importedFiles, miners);
+    await ProposeDeals(fc, db, config, importedFiles, miners);
 
     close(db);
   } catch (err) {
-    if (err.message) {
-      Logger.error(err.message);
-    }
-    Logger.error(err);
+    console.log('error storing files');
+    Logger.error(err.stack);
   }
 }
 
 module.exports = {
-  store
+  store,
+  getMiners
 };

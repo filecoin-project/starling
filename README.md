@@ -60,6 +60,18 @@ Store a folder
 > starling store path/to/folder
 ```
 
+Launch interactive monitoring interface
+
+```js
+> starling monitor
+```
+
+Generate CSV of all files stored
+
+```js
+> starling list
+```
+
 Output the version number
 
 ```js

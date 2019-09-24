@@ -278,7 +278,6 @@ function initWebScene() {
   renderer.debug.checkShaderErrors = true;
   renderer.antialias = true
   renderer.setSize(window.innerWidth, window.innerHeight);
-
   let container = document.getElementById('canvas');
   window.addEventListener('resize', onWindowResize, false);
   var stats = new Stats();
@@ -303,7 +302,7 @@ function initWebScene() {
     let curTime = Date.now();
     skyUniforms["time"] = { value: curTime - time };
     positionUniforms["time"] = { value: curTime - time };
-    positionUniforms["delta"] = { value: 0.06 * (curTime - lastTime) };
+    positionUniforms["delta"] = { value: 0.06 * Math.min(curTime - lastTime, 40) };
     velocityUniforms["time"] = { value: curTime - time };
     birdUniforms["time"] = { value: curTime - time };
     velocityUniforms["leaderPos"] = { value: leaderPos };
@@ -311,8 +310,8 @@ function initWebScene() {
     birdUniforms["texturePosition"].value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
     birdUniforms["textureVelocity"].value = gpuCompute.getCurrentRenderTarget(velocityVariable).texture;
     renderer.render(scene, camera);
-    lastTime = curTime;
     stats.end()
+    lastTime = curTime;
   });
 }
 

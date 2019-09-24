@@ -98,12 +98,13 @@ const Flocking = {
   `,
 
   positionFrag: `
-    uniform float time;
+  uniform float time;
+  uniform float delta;
     void main() {
       vec2 uv = gl_FragCoord.xy / resolution.xy;
       vec3 selfPosition = texture2D( texturePosition, uv ).xyz;
       vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
-      gl_FragColor = vec4(selfPosition + selfVelocity, 1.);
+      gl_FragColor = vec4(selfPosition + delta * selfVelocity, 1.);
     }
   `,
 };
@@ -268,7 +269,6 @@ let positionVariable, velocityVariable;
 function initWebScene() {
   /** BASIC THREE SETUP **/
   scene = new THREE.Scene();
-  scene.background = new THREE.Color("#c3e8ff");
   //set up camera
   camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100000);
   camera.position.set(0, 0, 3500)
@@ -280,34 +280,39 @@ function initWebScene() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   let container = document.getElementById('canvas');
-  container.appendChild(renderer.domElement);
   window.addEventListener('resize', onWindowResize, false);
-
+  var stats = new Stats();
+  container.appendChild(stats.domElement);
+  container.appendChild(renderer.domElement);
   initCompute();
   initBirds();
   initSky();
 
   let time = Date.now();
+  let lastTime = Date.now();
   let leaderPos = new THREE.Vector3();
   let i = 0;
   let simplex = new SimplexNoise('wass');
   renderer.setAnimationLoop(function () {
+    stats.begin();
     i += 0.001;
     let valX = simplex.noise2D(i, 5)
     let valY = simplex.noise2D(i, 1)
     let valZ = simplex.noise2D(i, 3)
-    leaderPos.set(800 * valX, 105 * valY, 800 * valZ)
-
-    skyUniforms["time"] = { value: Date.now() - time };
-    positionUniforms["time"] = { value: Date.now() - time };
-    velocityUniforms["time"] = { value: Date.now() - time };
-    birdUniforms["time"] = { value: Date.now() - time };
+    leaderPos.set(800 * valX, 205 * valY, 800 * valZ)
+    let curTime = Date.now();
+    skyUniforms["time"] = { value: curTime - time };
+    positionUniforms["time"] = { value: curTime - time };
+    positionUniforms["delta"] = { value: 0.06 * (curTime - lastTime) };
+    velocityUniforms["time"] = { value: curTime - time };
+    birdUniforms["time"] = { value: curTime - time };
     velocityUniforms["leaderPos"] = { value: leaderPos };
-
     gpuCompute.compute()
     birdUniforms["texturePosition"].value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
     birdUniforms["textureVelocity"].value = gpuCompute.getCurrentRenderTarget(velocityVariable).texture;
     renderer.render(scene, camera);
+    lastTime = curTime;
+    stats.end()
   });
 }
 

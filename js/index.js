@@ -277,6 +277,7 @@ function initWebScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.debug.checkShaderErrors = true;
   renderer.antialias = true
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   let container = document.getElementById('canvas');
   window.addEventListener('resize', onWindowResize, false);

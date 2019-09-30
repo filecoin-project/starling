@@ -274,9 +274,8 @@ function initWebScene() {
   camera.position.set(0, 0, 3500)
   scene.add(camera);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer();
   renderer.debug.checkShaderErrors = true;
-  renderer.antialias = true
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   let container = document.getElementById('canvas');
@@ -413,8 +412,8 @@ function initBirds() {
   });
 
   // point cloud
-  let cloud = new THREE.Mesh(new BirdGeometry(WIDTH * WIDTH), shaderMaterial);
-  scene.add(cloud);
+  let birdGroup = new THREE.Mesh(new BirdGeometry(WIDTH * WIDTH), shaderMaterial);
+  scene.add(birdGroup);
 }
 
 function onWindowResize() {

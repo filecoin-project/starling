@@ -4,15 +4,13 @@
   link: overview.html
 - name: Getting Started
   link: getting-started.html
-- name: CLI Guide
-  link: cli-guide.html
+- name: Commands
+  link: commands.html
 - name: Contributing
   link: contributing.html
-- name: FAQs and Troubleshooting
-  link: faqs-and-troubleshooting.html
-- name: Glossary
-  link: glossary.html
+- name: FAQs
+  link: faqs.html
+- name: Resources
+  link: resources.html
 - name: Credits
   link: credits.html
-- name: License
-  link: license.html

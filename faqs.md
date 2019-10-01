@@ -5,11 +5,11 @@ title: FAQs and Troubleshooting
 
 # Frequently Asked Questions
 
-## What is Filecoin?
-Filecoin is a decentralized storage network that turns cloud storage into a peer-to-peer algorithmic market. Miners earn the native protocol token (also called “Filecoin”) by providing data storage and/or retrieval. Conversely, clients pay miners to store or distribute data and to retrieve it. “Filecoin” can refer to a) the network, b) the protocol, c) the token powering the network, and d) the project. For more details, please see https://filecoin.io/faqs/
+### What is Filecoin?
+Filecoin is a decentralized storage network that turns cloud storage into a peer-to-peer algorithmic market. Miners earn the native protocol token (also called “Filecoin”) by providing data storage and/or retrieval. Conversely, clients pay miners to store or distribute data and to retrieve it. “Filecoin” can refer to a) the network, b) the protocol, c) the token powering the network, and d) the project. For more details, please see [https://filecoin.io/faqs/](https://filecoin.io/faqs/)
 
-## What is Starling?
-Starling is a decentralized storage application built on Filecoin that is designed for use in archival settings where the ability to demonstrate the authenticity of a file over the course of time is of paramount importance. For more details, please see http://starlingstorage.io/overview.html
+### What is Starling?
+Starling is a decentralized storage application built on Filecoin that is designed for use in archival settings where the ability to demonstrate the authenticity of a file over the course of time is of paramount importance. For more details, please see [http://starlingstorage.io/overview.html](http://starlingstorage.io/overview.html)
 
 ## What is decentralized storage?
 Decentralized storage is a model of online storage where data is stored on multiple independent computers. The servers used are hosted by individual users or groups, rather than a single company like Amazon, Google, or Microsoft, as is the case with centralized cloud storage.
@@ -35,3 +35,6 @@ Please see https://github.com/filecoin-project/starling/issues
 
 ## Who made this?
 Starling is a highly collaborative project, maintained by a burgeoning [community](https://github.com/filecoin-project/starling/graphs/contributors) of individuals passionate about the potential for decentralized storage to preserve the cultural record. The project is managed by [Small Data Industries](http://smalldata.industries), and is licensed dually under the [Apache License, Version 2.0](), and [The MIT License](). Please see [LICENSE-APACHE](https://github.com/filecoin-project/starling/blob/master/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/filecoin-project/starling/blob/master/LICENSE-MIT) on GitHub for full license information.
+
+## Known Issues
+For known issues, please see [https://github.com/filecoin-project/starling/issues](https://github.com/filecoin-project/starling/issues)

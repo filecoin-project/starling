@@ -1,10 +1,12 @@
 body{
-	font-family: 'Roboto Mono', monospace !important;
+	font-family: 'Roboto Mono', monospace ;
+	font-weight: 300;
+	font-size: 1.6em;
 
 }
 
 html{
-	font-family: 'Roboto Mono', monospace !important;
+	font-family: 'Roboto Mono', monospace ;
 }
 
 
@@ -18,17 +20,6 @@ html{
 }
 
 
-input{
-	border: none;
-	background-color: rgba(93,82,124,.87);
-	font-family: 'Roboto Mono', monospace !important;
-	color: white;
-	font-size: 1em;
-	font-weight: 100;
-	padding: 15px;
-	padding-left: 30px;
-	padding-right: 30px;
-}
 
 .github{
 	position: absolute;
@@ -41,28 +32,12 @@ input{
 	display: inline;
 }
 
-.button{
-	font-family: 'Roboto Mono', monospace !important;
-	font-size: 2em;
-	padding: 5px;
-	color: white;
-	font-weight: 100;
-/*	border-width: 1px;
-	border: solid;*/
-	margin-top: 15px;
-	cursor: pointer;
-}
 
-.button:hover{
-	background-color: white;
-	color: rgba(93,82,124,.87);
-}
 
 h1{
 		font-weight: 100;
-		font-size: 7em;
-		color: white;
-		font-family: 'Roboto Mono', monospace !important;
+		font-size: 4em;
+		font-family: 'Roboto Mono', monospace;
 }
 
 h2{
@@ -73,25 +48,5 @@ h2{
 h5{
 	font-weight: 100;
 	font-size: 2em;
-	color: white;
 }
 
-.outer{
-	display: table;
-	position: absolute;
-	top: 0;
-	left: 0;
-	height: 100%;
-	width: 100%;
-}
-
-.middle {
-	display: table-cell;
-	vertical-align: middle;
-}
-
-.inner{
-	margin-left: auto;
-	margin-right: auto;
-	width: 75%;
-}

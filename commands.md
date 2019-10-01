@@ -7,7 +7,7 @@ title: Commands
 
 This section describes command-line arguments that you can provide to Starling. Remember to always type starling before invoking an argument in the command-line.
 
-If you don’t understand a term, try looking it up in Starling’s [glossary]() under the “Resources” section.
+If you don’t understand a term, try looking it up in Starling’s [glossary](http://starlingstorage.io/resources.html) under the “Resources” section.
 
 ## config
 Configures the following global preferences for Starling:
@@ -53,7 +53,7 @@ Interactive keyboard shortcuts:
 
 Outputs:
 - `Files stored in the network` - the number of files stored on the Filecoin Network
-- `\# of miners` - the number of miners storing or retrieving your files
+- `# of miners` - the number of miners storing or retrieving your files
 - `Storage space used` - the amount of storage space currently being used (in TB)
 - `Wallet balance` - the balance of your Filecoin wallet
 - `Active jobs` - the number of active jobs currently being performed by miners
@@ -81,7 +81,7 @@ Queues the process of making storage deals with Filecoin miners on your behalf.
 Syntax: `starling store [path]`
 - `path` - full path of a file or directory
 
-Note: `store` makes storage deals for the number of redundant copies and price per TB specified when you first installed Starling, or else updated using config.
+Note: `store` makes storage deals for the number of redundant copies and price per TB specified when you first installed Starling, or else updated using `config`.
 
 ## verify
 Outputs a CSV file of your content stored on the Filecoin Network which you can use to verify the integrity of data.

@@ -9,11 +9,8 @@ Starling is a decentralized storage application designed for use in archival set
 ## Lots of copies keeps stuff safe
 When you store files with Starling, it will store however many redundant copies of your file you want.
 
-## Proof of Authenticity
-Why blindly trust a black-box like the cloud? How do you know if a storage provider is really doing what they say they are? With Starling, you have trustworthy, openly documented, cryptographic proof that whoever you are paying to store your data really is doing what they say they are, and that your files have not been modified or become corrupt.
-
-## Decentralized Storage
-
+## Proof of authenticity
+Why blindly trust a black-box like the cloud? How do you know if a storage provider is really doing what they say they are? With Starling, you have trustworthy, [openly documented](https://filecoin.io/#research), cryptographic proof that whoever you are paying to store your data really is doing what they say they are, and that your files have not been modified or become corrupt.
 
 ## Use Cases
 

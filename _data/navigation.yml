@@ -1,16 +1,10 @@
-- name: Home
-  link: index.html
 - name: Overview
   link: overview.html
 - name: Getting Started
   link: getting-started.html
 - name: Commands
   link: commands.html
-- name: Contributing
-  link: contributing.html
 - name: FAQs
   link: faqs.html
 - name: Resources
   link: resources.html
-- name: Credits
-  link: credits.html

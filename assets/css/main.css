@@ -2,23 +2,50 @@ body{
 	font-family: 'Roboto Mono', monospace ;
 	font-weight: 300;
 	font-size: 1.6em;
+	color: white;
+	background-color: black;
+	background-image: url(../img/starlingbg.jpg);
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+	background-position: center center;
+	background-size: cover;
 
+}
+
+img{
+	width: 100%;
 }
 
 html{
 	font-family: 'Roboto Mono', monospace ;
 }
 
+nav a{
+	font-size: .7em;
+	padding-left: 40px;
+	color: white;
+}
+
+nav{
+	margin-right: 50px;
+	margin-top: 25px;
+	text-align: right;
+}
 
 .logo{
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: 25px;
+	left: 25px;
 	padding-left: 15px;
 	line-height: 0;
-	margin-top: -15px;
 }
 
+
+
+
+.container{
+	margin-top: 100px;
+}
 
 
 .github{
@@ -36,13 +63,13 @@ html{
 
 h1{
 		font-weight: 100;
-		font-size: 4em;
+		font-size: 3em;
 		font-family: 'Roboto Mono', monospace;
 }
 
 h2{
 	font-weight: 100;
-	font-size: 4em;
+	font-size: 2em;
 }
 
 h5{

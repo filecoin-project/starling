@@ -1,5 +1,5 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <title>{{ page.title }}</title>
@@ -24,6 +24,11 @@
   </head>
   <body>
 
+<div class="logo"><h5>Starling</h5></div>
+
+    {% include navigation.html %}
+
+	<div class="container">
 <div class='github'>
 <a href="https://github.com/filecoin-project/starling" class="github-corner" aria-label="View source on GitHub" rel="noopener" tyle="position: absolute; top: 0; border: 0; right: 0;">
   
@@ -39,10 +44,7 @@
 
 <style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 </div>
-
-    {% include navigation.html %}
-
-	<div class="container">
+		
     	{{ content }}
     </div>
 

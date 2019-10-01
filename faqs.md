@@ -32,3 +32,6 @@ There are many ways to contribute to to Starling.
 
 ## I found a problem! Who do I tell?
 Please see https://github.com/filecoin-project/starling/issues
+
+## Who made this?
+Starling is a highly collaborative project, maintained by a burgeoning [community](https://github.com/filecoin-project/starling/graphs/contributors) of individuals passionate about the potential for decentralized storage to preserve the cultural record. The project is managed by [Small Data Industries](http://smalldata.industries), and is licensed dually under the [Apache License, Version 2.0](), and [The MIT License](). Please see [LICENSE-APACHE](https://github.com/filecoin-project/starling/blob/master/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/filecoin-project/starling/blob/master/LICENSE-MIT) on GitHub for full license information.

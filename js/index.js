@@ -280,8 +280,8 @@ function initWebScene() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   let container = document.getElementById('canvas');
   window.addEventListener('resize', onWindowResize, false);
-  var stats = new Stats();
-  container.appendChild(stats.domElement);
+  // var stats = new Stats();
+  // container.appendChild(stats.domElement);
   container.appendChild(renderer.domElement);
   initCompute();
   initBirds();
@@ -293,7 +293,7 @@ function initWebScene() {
   let i = 0;
   let simplex = new SimplexNoise('wass');
   renderer.setAnimationLoop(function () {
-    stats.begin();
+    // stats.begin();
     i += 0.001;
     let valX = simplex.noise2D(i, 5)
     let valY = simplex.noise2D(i, 1)
@@ -310,7 +310,7 @@ function initWebScene() {
     birdUniforms["texturePosition"].value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
     birdUniforms["textureVelocity"].value = gpuCompute.getCurrentRenderTarget(velocityVariable).texture;
     renderer.render(scene, camera);
-    stats.end()
+    // stats.end()
     lastTime = curTime;
   });
 }

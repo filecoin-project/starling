@@ -1,4 +1,30 @@
-let BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2; let WIDTH = 40;
+/*
+  STARLING SIMULATION PARAMETERS START
+ */
+// Bounding cube dimensions for where the birds can fly
+let BOUNDS = 800;
+
+// Distance from Camera to simulation
+let CAMERA_Z = 2500;
+
+// total number of birds is SQRT_NUMBER_OF_BIRDS * SQRT_NUMBER_OF_BIRDS
+let SQRT_NUMBER_OF_BIRDS = 40;
+
+// other bird params
+let SPEED = 0.06;
+let COHESION_DISTANCE = 20;
+let BIRD_COLOR = new THREE.Color("#1d0912");
+
+// every x seconds, there will be 1.5 seconds where the birds no longer follow their "leader"
+let TIME_UNTIL_CHAOS = 30;
+
+// helpers ( don't modify directly )
+let WIDTH = SQRT_NUMBER_OF_BIRDS;
+let BOUNDS_HALF = BOUNDS / 2;
+/*
+  STARLING SIMULATION PARAMETERS END
+ */
+
 /*
   SHADERS START
  */
@@ -7,7 +33,8 @@ const Flocking = {
     float delta = 0.016;
     float separationDistance = 30.0;
     float alignmentDistance = 40.0;
-    float cohesionDistance = 20.0;
+    uniform float cohesionDistance;
+    uniform float timeUntilChaos;
     uniform vec3 leaderPos;
 
     const float width = resolution.x;
@@ -42,12 +69,15 @@ const Flocking = {
       vec3 dir;
       float dist, distSquared, percent, f;
 
-      // Attract flocks to the leader
-      dir = selfPosition.xyz - leaderPos;
-      dist = length( dir );
+      float chaos = mod(time/1000.0, timeUntilChaos);
+      if(chaos < timeUntilChaos - 1.5){
+        // Attract flocks to the leader
+        dir = selfPosition.xyz - leaderPos;
+        dist = length( dir );
+        dir.y *= 2.5;
+        velocity -= normalize( dir ) * delta * 5.;
+      }
 
-      dir.y *= 2.5;
-      velocity -= normalize( dir ) * delta * 5.;
 
       separationDistance += 1.5 * mod(time/1000.0, 30.0);
       float zoneRadius = separationDistance + alignmentDistance + cohesionDistance;
@@ -247,9 +277,7 @@ let BirdGeometry = function (count) {
     let x = (i % width) / width;
     let y = ~ ~(i / width) / width;
 
-    let c = new THREE.Color(
-      "#1d0912"
-    );
+    let c = BIRD_COLOR;
     birdColors.array[v * 3 + 0] = c.r;
     birdColors.array[v * 3 + 1] = c.g;
     birdColors.array[v * 3 + 2] = c.b;
@@ -271,17 +299,15 @@ function initWebScene() {
   scene = new THREE.Scene();
   //set up camera
   camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100000);
-  camera.position.set(0, 0, 3500)
+  camera.position.set(0, 0, CAMERA_Z)
   scene.add(camera);
 
   renderer = new THREE.WebGLRenderer();
   renderer.debug.checkShaderErrors = true;
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(0.9*window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   let container = document.getElementById('canvas');
   window.addEventListener('resize', onWindowResize, false);
-  // var stats = new Stats();
-  // container.appendChild(stats.domElement);
   container.appendChild(renderer.domElement);
   initCompute();
   initBirds();
@@ -293,16 +319,15 @@ function initWebScene() {
   let i = 0;
   let simplex = new SimplexNoise('wass');
   renderer.setAnimationLoop(function () {
-    // stats.begin();
     i += 0.001;
     let valX = simplex.noise2D(i, 5)
     let valY = simplex.noise2D(i, 1)
     let valZ = simplex.noise2D(i, 3)
-    leaderPos.set(800 * valX, 205 * valY, 800 * valZ)
+    leaderPos.set(800 * valX, 405 * valY, 800 * valZ)
     let curTime = Date.now();
     skyUniforms["time"] = { value: curTime - time };
     positionUniforms["time"] = { value: curTime - time };
-    positionUniforms["delta"] = { value: 0.06 * Math.min(curTime - lastTime, 40) };
+    positionUniforms["delta"] = { value: SPEED * Math.min(curTime - lastTime, 40) };
     velocityUniforms["time"] = { value: curTime - time };
     birdUniforms["time"] = { value: curTime - time };
     velocityUniforms["leaderPos"] = { value: leaderPos };
@@ -310,7 +335,6 @@ function initWebScene() {
     birdUniforms["texturePosition"].value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
     birdUniforms["textureVelocity"].value = gpuCompute.getCurrentRenderTarget(velocityVariable).texture;
     renderer.render(scene, camera);
-    // stats.end()
     lastTime = curTime;
   });
 }
@@ -363,7 +387,8 @@ function initCompute() {
   velocityUniforms["delta"] = { value: 0.0 };
   velocityUniforms["separationDistance"] = { value: 1.0 };
   velocityUniforms["alignmentDistance"] = { value: 1.0 };
-  velocityUniforms["cohesionDistance"] = { value: 1.0 };
+  velocityUniforms["cohesionDistance"] = { value: COHESION_DISTANCE };
+  velocityUniforms["timeUntilChaos"] = { value: TIME_UNTIL_CHAOS };
   velocityUniforms["leaderPos"] = { value: new THREE.Vector3() };
   velocityVariable.material.defines.BOUNDS = BOUNDS.toFixed(2);
 
@@ -448,4 +473,4 @@ function fillVelocityTexture(texture) {
   }
 }
 
-initWebScene();
+initWebScene()

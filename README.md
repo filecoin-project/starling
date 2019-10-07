@@ -1,6 +1,6 @@
 # Starling
 
-A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network. This is a work in progress – MVP ships October 5th, and this code is not production-ready. Use at your own risk.
+A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network. This is a work in progress and is not yet production-ready. Use at your own risk.
 
 ```
       .. .

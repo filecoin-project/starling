@@ -95,7 +95,15 @@ function updateFileDB(db, name, deal, index) {
   updateFile(db, name, deal, index);
 }
 
-async function proposeDeal(fc, db, { cid, name }, miners, index) {
+async function proposeDeal(
+  fc,
+  db,
+  { cid, name },
+  miners,
+  index,
+  copyNumber,
+  bar
+) {
   for (let i = 0; i < size(miners); i++) {
     Logger.info(`storing ${name} with miner ${miners[i].miner}`);
 
@@ -117,7 +125,11 @@ async function proposeDeal(fc, db, { cid, name }, miners, index) {
       };
 
       Logger.info(storageDealProposal);
-      updateFileDB(db, name, deal, index + 1);
+      if (copyNumber) {
+        bar.tick();
+      }
+
+      updateFileDB(db, name, deal, copyNumber ? copyNumber : index + 1);
 
       return Promise.resolve({ deal: 'accepted' });
     } catch (err) {
@@ -145,9 +157,13 @@ async function ProposeDeals(fc, db, config, importedFiles, miners) {
         const { cid, name, fileSize } = FILE;
         const formattedSize = formatBytes(fileSize);
 
-        insertFile(db, cid, name, fileSize, formattedSize);
+        if (i === 0) {
+          for (let j = 0; j < totalCopies; j++) {
+            insertFile(db, cid, name, fileSize, formattedSize, j + 1);
+          }
+        }
 
-        return proposeDeal(fc, db, FILE, miners, i, bar);
+        return proposeDeal(fc, db, FILE, miners, i);
       })
     );
 
@@ -241,5 +257,6 @@ async function store(fc) {
 
 module.exports = {
   store,
-  getMiners
+  getMiners,
+  proposeDeal
 };

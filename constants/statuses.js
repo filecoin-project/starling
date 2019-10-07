@@ -1,4 +1,4 @@
-const statuses = { 3: 'sync', 4: 'seal' };
+const statuses = { 6: 'sync', 7: 'seal' };
 
 module.exports = {
   statuses

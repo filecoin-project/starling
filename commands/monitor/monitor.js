@@ -1,5 +1,4 @@
 const blessed = require('blessed');
-
 const chalk = require('chalk');
 
 const { Logger, formatBytes } = require('../../utils');
@@ -10,15 +9,44 @@ const {
   getQueuedFileList,
   getActiveFileList,
   getTableData,
-  getTableDataNotQueued
+  getTableDataNotQueued,
+  getFilteredTableContent,
+  getStorageDeals,
+  updateFileStatus
 } = require('../../db');
 const { getMiners } = require('../store');
 const {
   getHeaderRight,
   getHeaderLeft,
   getTable,
-  getFooter
+  getFooter,
+  getInput
 } = require('./components');
+
+const regex = new RegExp('^[ -~]*$');
+const footerData = [
+  [
+    `${chalk.white.bgBlack(' ^F ')} Filter ${chalk.white.bgBlack(
+      ' ^H '
+    )} hide queued`
+  ]
+];
+
+const footerShowQueued = [
+  [
+    `${chalk.white.bgBlack(' ^F ')} Filter ${chalk.white.bgBlack(
+      ' ^H '
+    )} show queued`
+  ]
+];
+
+const footerExitFilter = [
+  [
+    `${chalk.white.bgBlack(' esc ')} exit filter ${chalk.white.bgBlack(
+      ' ^H '
+    )} show queued`
+  ]
+];
 
 function draw(param) {
   let bar = '';
@@ -86,13 +114,10 @@ async function getMonitorData(fc, db) {
     `${progress({ active, queued })}`
   ];
 
-  const footerData = [[`${chalk.white.bgBlack(' ^H ')} hide queued`]];
-
   return {
     headerLeftData,
     headerRightData,
-    tableData,
-    footerData
+    tableData
   };
 }
 
@@ -104,32 +129,65 @@ async function monitor(fc, rate) {
 
     let index = 1;
     let paused = false;
-    const footerShowQueued = [[`${chalk.white.bgBlack(' ^H ')} show queued`]];
 
     const refreshRate = rate * 1000 || 3000;
     const db = await connect();
 
-    const {
-      headerRightData,
-      headerLeftData,
-      tableData,
-      footerData
-    } = await getMonitorData(fc, db);
+    const { headerRightData, headerLeftData, tableData } = await getMonitorData(
+      fc,
+      db
+    );
 
     const headerRight = getHeaderRight(headerRightData);
     const headerLeft = getHeaderLeft(headerLeftData);
     const table = getTable(tableData);
     const footer = getFooter(footerData);
+    const input = getInput();
 
     screen.append(headerLeft);
     screen.append(headerRight);
     screen.append(table);
     screen.append(footer);
-
-    console.log(tableData.length);
+    screen.append(input);
 
     console.clear();
     screen.render();
+    let userInput = '';
+
+    input.on(['keypress'], (data, key) => {
+      switch (key.full) {
+        case 'backspace':
+          userInput = userInput.slice(0, -1);
+          getFilteredTableContent(db, userInput, data => {
+            table.setData(data);
+            screen.render();
+          });
+          break;
+
+        case 'escape':
+          input.clearValue();
+          footer.setData(footerData);
+          screen.render();
+          userInput = '';
+          paused = false;
+          break;
+
+        case 'enter':
+          break;
+
+        default:
+          if (data && regex.test(data)) {
+            userInput = userInput + data;
+          }
+
+          getFilteredTableContent(db, userInput, data => {
+            table.setData(data);
+            screen.render();
+          });
+
+          break;
+      }
+    });
 
     screen.on('keypress', (ch, key) => {
       switch (key.full) {
@@ -149,7 +207,7 @@ async function monitor(fc, rate) {
           if (paused) {
             getTableData(db, data => {
               paused = false;
-              table.setData(data);
+              table.setData(data.data);
               footer.setData(footerData);
               screen.render();
             });
@@ -162,9 +220,15 @@ async function monitor(fc, rate) {
             });
           }
           break;
-        case 'C-f':
-          break;
         case 'C-s':
+          break;
+        case 'C-f':
+          userInput = '';
+          paused = true;
+          footer.setData(footerExitFilter);
+          screen.render();
+          input.focus();
+
           break;
         case 'escape':
         case 'q':
@@ -192,9 +256,51 @@ async function monitor(fc, rate) {
         index = 1;
       }
     }, refreshRate);
+
+    setInterval(async () => {
+      if (!paused) {
+        getStorageDeals(db, data => {
+          updateDealStatus(fc, db, data);
+        });
+      }
+    }, 30000); // get the status of the deals every 30 seconds
   } catch (err) {
     Logger.error(err.stack);
     process.exit(0);
+  }
+}
+
+async function updateDealStatus(fc, db, data) {
+  try {
+    await Promise.all(
+      data.map(async deal => {
+        const { dealId, cid, copyNumber, commD_old } = deal;
+        const init = commD_old ? false : true;
+
+        const storageDeal = await fc.client.queryStorageDeal(dealId);
+
+        const {
+          state,
+          proofInfo: { commD, commR, commRStar }
+        } = storageDeal;
+
+        const fixityResult = commD === commD_old ? 'pass' : 'FAIL';
+
+        updateFileStatus(
+          db,
+          cid,
+          copyNumber,
+          state,
+          commD,
+          commR,
+          commRStar,
+          fixityResult,
+          init
+        );
+      })
+    );
+  } catch (err) {
+    Logger.error(err.stack);
   }
 }
 

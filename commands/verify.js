@@ -1,11 +1,11 @@
-const { connect, close, getStoredFileList } = require('../db');
+const { connect, close, getVerifyList } = require('../db');
 const { Logger, generateCSV } = require('../utils');
 
-async function list() {
+async function verify() {
   try {
     const db = await connect();
-    getStoredFileList(db, data => {
-      generateCSV(data, 'list');
+    getVerifyList(db, data => {
+      generateCSV(data, 'verify');
     });
 
     close(db);
@@ -16,5 +16,5 @@ async function list() {
 }
 
 module.exports = {
-  list
+  verify
 };

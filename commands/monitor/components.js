@@ -67,7 +67,7 @@ function getTable(data) {
     top: 6,
     vi: false,
     width: '100%',
-    height: '62%',
+    height: '60%',
     interactive: true
   });
 
@@ -91,7 +91,7 @@ function getFooter(data) {
       }
     },
     tags: true,
-    bottom: 0,
+    bottom: 1,
     vi: false,
     width: '100%',
     height: '10%'
@@ -100,9 +100,21 @@ function getFooter(data) {
   return table;
 }
 
+function getInput() {
+  let input = blessed.textarea({
+    width: '100%',
+    height: '10%',
+    bottom: 0,
+    inputOnFocus: true
+  });
+
+  return input;
+}
+
 module.exports = {
   getHeaderRight,
   getHeaderLeft,
   getTable,
-  getFooter
+  getFooter,
+  getInput
 };

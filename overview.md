@@ -5,7 +5,7 @@ title: Overview
 
 Starling is a decentralized storage application designed for use in archival settings, where the ability to demonstrate the authenticity of a file over the course of time is of paramount importance.
 
-![photo test asdf]({{site.url}}/assets/img/interactive.gif)
+![photo test asdf](assets/img/interactive.gif)
 
 
 ## Lots of copies keeps stuff safe

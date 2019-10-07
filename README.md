@@ -12,14 +12,6 @@ A command-line interface for simplified, coordinated, decentralized storage on t
 
 ```
 
-## Installation
-
-Install the Starling package globally using npm
-
-```js
-> npm install -g starling
-```
-
 ## Development
 
 To run locally

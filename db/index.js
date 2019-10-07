@@ -7,7 +7,13 @@ const {
   getQueuedFileList,
   getActiveFileList,
   getTableData,
-  getTableDataNotQueued
+  getTableDataNotQueued,
+  getFilteredTableContent,
+  getQueuedFilesInfo,
+  getRetryFiles,
+  getStorageDeals,
+  updateFileStatus,
+  getVerifyList
 } = require('./functions');
 
 module.exports = {
@@ -20,5 +26,11 @@ module.exports = {
   getQueuedFileList,
   getActiveFileList,
   getTableData,
-  getTableDataNotQueued
+  getTableDataNotQueued,
+  getFilteredTableContent,
+  getQueuedFilesInfo,
+  getRetryFiles,
+  getStorageDeals,
+  updateFileStatus,
+  getVerifyList
 };

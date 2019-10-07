@@ -36,9 +36,13 @@ Test by running
 
 Starling uses an [sqlite3](https://www.npmjs.com/package/sqlite3) database. The db is created in `HOME/.starling/starling.db`
 
-### Logs
+## API Address Config
 
-Logs are located in `HOME/.starling/logs/starling.log`
+The default API Address is localhost, in cases where Starling and the filecoin node are on the same machine. In order to connect to a remote filecoin node, create a `.env` file in the root directory of the project and insert the API Adress as such:
+
+```j
+apiAddr='/ip4/<Filecoin Node IP Address>/tcp/3453/'
+```
 
 ## Commands
 
@@ -64,12 +68,36 @@ Launch interactive monitoring interface
 
 ```js
 > starling monitor
+
+// up/down keys: scroll through the list
+// ^H: hide/show queued files
+// ^F: filter all files
 ```
 
-Generate CSV of all files stored
+Generate a CSV report of all files stored
 
 ```js
+// outputs file in the working directory
 > starling list
+
+// outputs file in the specified directory
+> starling list <path>
+```
+
+Generate a CSV report of file fixity
+
+```js
+// outputs file in the working directory
+> starling verify
+
+// outputs file in the specified directory
+> starling verify <path>
+```
+
+Retry uploading the failed jobs
+
+```js
+> starling retry
 ```
 
 Output the version number
@@ -82,4 +110,6 @@ Output usage information
 
 ```js
 > starling --help | -h | help
+
+> starling [command] --help
 ```

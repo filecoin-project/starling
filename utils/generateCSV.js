@@ -1,26 +1,31 @@
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const { csvPath } = require('../constants/paths');
+const { csvListPath, csvVerifyPath } = require('../constants/paths');
+const { listHeader, verifyHeader } = require('../constants/csvHeaders');
 const { Logger } = require('./logger');
 
-async function generateCSV(list) {
+const date = new Date();
+
+async function generateCSV(data, type) {
   try {
-    const path = process.argv[3]
-      ? `${process.argv[3]}/starlingList.csv`
-      : csvPath;
+    let path;
+    const header = type === 'list' ? listHeader : verifyHeader;
+
+    if (process.argv[3]) {
+      path =
+        type === 'list'
+          ? `${process.argv[3]}/starlingList-${date}.csv`
+          : `${process.argv[3]}/starlingVerify-${date}.csv`;
+    } else {
+      path = type === 'list' ? csvListPath : csvVerifyPath;
+    }
 
     const csvWriter = createCsvWriter({
       path: path,
-      header: [
-        { id: 'NAME', title: 'Content' },
-        { id: 'SIZE', title: 'Size' },
-        { id: 'SIZE_BYTES', title: 'Size(Bytes)' },
-        { id: 'CID', title: 'CID' },
-        { id: 'MINER_ID', title: 'Miner ID' },
-        { id: 'DEAL_DATE', title: 'Deal commencement' }
-      ]
+      header: header
     });
 
-    await csvWriter.writeRecords(list);
+    await csvWriter.writeRecords(data);
+
     console.log(`generated csv file at ${path}`);
   } catch (err) {
     Logger.error(err.stack);

@@ -2,15 +2,6 @@
 
 A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network. This is a work in progress and is not yet production-ready. Use at your own risk.
 
-```
-      .. .
-     .... ..
-  ...... .. ... . .
-    . ... ....... ... ..
-         .... .. .. ....
-              .........
-
-```
 
 ## Development
 

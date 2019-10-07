@@ -344,7 +344,7 @@ function initSky() {
     skyColor1: { value: new THREE.Color("#ffc5f6") },
     skyColor2: { value: new THREE.Color("#5b8dfd") },
     perlinTex: {
-      value: new THREE.TextureLoader().load('/assets/seamless-perlin-noise.jpg', (tex) => {
+      value: new THREE.TextureLoader().load('assets/seamless-perlin-noise.jpg', (tex) => {
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
       })

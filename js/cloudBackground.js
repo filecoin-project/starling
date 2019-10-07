@@ -46,8 +46,6 @@ function initWebScene() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   let container = document.getElementById('canvas');
   window.addEventListener('resize', onWindowResize, false);
-  var stats = new Stats();
-  container.appendChild(stats.domElement);
   container.appendChild(renderer.domElement);
   initSky();
 

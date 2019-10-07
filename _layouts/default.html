@@ -21,8 +21,18 @@
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
 
+ <!-- threejs stuff -->
+  <script src="../js/lib/three.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.js"></script>
+  <script src="../js/lib/SimplexNoise.js"></script>
+  <script src="../js/lib/GPUComputationRenderer.js"></script>
+
   </head>
   <body>
+
+      <!-- Simulation canvas -->
+  <div class="mainbg" id="canvas">
+</div>
 
 <span class="enter">
 <a href="/"><div class="logo"><h5>Starling</h5></div></a>
@@ -49,6 +59,7 @@
 		
     	{{ content }}
     </div>
+  <script src="../js/cloudBackground.js"></script>
 
   </body>
 </html>

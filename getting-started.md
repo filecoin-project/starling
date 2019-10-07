@@ -4,11 +4,14 @@ title: Getting Started
 ---
 
 # Getting Started
-Before you can install Starling, you will need to make sure you have a few things installed first.
+Starling is powered by the Filecoin protocol, and so before we can get started with installing and using Starling, we will need to install Filecoin, and get our node up and running. 
 
 
-1. **First up is Filecoin** – the underlying protocol that makes Starling possible. The Filecoin project is still early in development, so currently there isn’t yet an easy-to-use installer, package, or wizard yet. The best and most up-to-date instructions to follow are in Filecoin’s [wiki](https://docs.filecoin.io/go-filecoin-tutorial/Getting-Started.html). If you are running Linux, [installing from binary](https://docs.filecoin.io/go-filecoin-tutorial/Getting-Started.html#install-filecoin-and-its-dependencies) is probably easiest, but on any other platform and you will need to [install from source](https://docs.filecoin.io/go-filecoin-tutorial/Getting-Started.html#install-filecoin-and-its-dependencies). Follow these instructions all the way through the end, and you will have a functional Filecoin node.
-2. **Next is Node.js** – the framework that Starling is built in. You can find Linux binaries, and installers for Windows and macOS on the Node.js downloads page. 
+## Installing Filecoin
+The Filecoin project is still early in development, so currently there isn’t yet an easy-to-use installer, package, or wizard yet. The best and most up-to-date instructions to follow are in Filecoin’s [wiki](https://docs.filecoin.io/go-filecoin-tutorial/Getting-Started.html). If you are running Linux, [installing from binary](https://docs.filecoin.io/go-filecoin-tutorial/Getting-Started.html#install-filecoin-and-its-dependencies) is probably easiest, but on any other platform and you will need to [install from source](https://docs.filecoin.io/go-filecoin-tutorial/Getting-Started.html#install-filecoin-and-its-dependencies). Follow these instructions all the way through the end, and you will have a functional Filecoin node.
+
+## Installing NodeJS
+Starling was written in the NodeJS framework, so in order to install and use Starling we will also need to install NodeJS. You can find Linux binaries, and installers for Windows and macOS on the [Node.js downloads page](https://nodejs.org/en/download/). 
 
 
 Now that you have Filecoin and Node.js up and running, getting Starling installed is as easy as typing and entering the following command:

@@ -1,5 +1,5 @@
 ---
-layout: threejs-starling-sim
+layout: landing
 title: Starling - Decentralized Storage for Preservation
 ---
 

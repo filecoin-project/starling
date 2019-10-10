@@ -61,23 +61,34 @@ html{
 	font-family: 'Roboto Mono', monospace ;
 }
 
-nav a{
+/*nav a{
 	font-size: .6em;
 	padding-left: 1.4em;
 	color: white;
-}
-
+}*/
+/*
 nav a:hover{
 	background-color: none;
 	color: white;
 	text-decoration: underline;
-}
+}*/
 
 nav{
-	position: absolute;
 	z-index: 5;
-	top: 35px;
-	right: 100px;
+	font-size: .6em;
+	background-color: #ffffff00 !important;
+	margin-right: 50px;
+}
+
+.navbar-brand{
+		font-size: 3.5em;
+		font-weight: 100;
+
+}
+
+.nav a {
+	font-weight: 100;
+	color: white;
 }
 
 .logo{
@@ -90,7 +101,6 @@ nav{
 
 
 .logo h5{
-	font-size: 1.5em;
 }
 
 
@@ -193,7 +203,7 @@ code{
 	font-size: 2em;
 }
 
-@media only screen and (max-width: 650px) {
+@media only screen and (max-width: 995px) {
   .github{
 	display: none;
 }

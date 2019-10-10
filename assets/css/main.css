@@ -203,6 +203,10 @@ code{
 		margin-top: 1em;
 	}
 
+body{
+	font-size: 92%;
+}
+
 }
 
 @media only screen and (max-width: 995px) {
@@ -210,21 +214,34 @@ code{
 	display: none;
 }
 
-body{
-	font-size: 92%;
-}
+
 
 }
 
 @media only screen and (min-width: 768px){
 	
-	body{
-		font-size: 70% !important;
-	}
 
 	.container{
 		padding: 0;
 		max-width: 768px;
+	}
+
+
+
+	.middle h1{
+	font-size: 1em;
+}
+
+}
+
+
+
+@media only screen and (min-width: 1200px){
+	
+
+	.container{
+		padding: 0;
+		max-width: 1140px;
 	}
 
 

@@ -245,9 +245,8 @@ body{
 	}
 
 
-
 	.middle h1{
-	font-size: 1em;
+	font-size: 2.9em;
 }
 
 }
@@ -259,7 +258,16 @@ body{
 .middle h1{
 	font-size: 3em;
 }
+
+	.container{
+		padding: 0;
+		max-width: 1340px;
+	}
+
+
 }
+
+
 
 
  @media only screen and (min-width : 1410px) {

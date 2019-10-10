@@ -193,11 +193,15 @@ code{
 
 
 
- @media only screen and (max-width : 600px) {
+ @media only screen and (max-width : 700px) {
 
 .middle h1{
-	font-size: 2em;
+	font-size: 1.5em;
 }
+
+.main{
+		margin-top: 1em;
+	}
 
 }
 
@@ -205,6 +209,11 @@ code{
   .github{
 	display: none;
 }
+
+body{
+	font-size: 92%;
+}
+
 }
 
 @media only screen and (min-width: 768px){
@@ -218,11 +227,17 @@ code{
 		max-width: 768px;
 	}
 
+
+
+	.middle h1{
+	font-size: 1em;
+}
+
 }
 
 
 
- @media only screen and (max-width : 1400px) {
+ @media only screen and (min-width : 1400px) {
 
 .middle h1{
 	font-size: 3em;

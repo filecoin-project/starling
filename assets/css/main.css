@@ -82,12 +82,16 @@ nav{
 
 .logo{
 	position: absolute;
-	top: 25px;
-	left: 25px;
+	top: 45px;
+	left: 48px;
 	padding-left: 15px;
 	line-height: 0;
 }
 
+
+.logo h5{
+	font-size: 1.5em;
+}
 
 
 
@@ -146,13 +150,39 @@ h5{
 	margin-right: auto;
 }
 
+.footer{
+	padding-top: 4em;
+	margin-top: 9em;
+	font-size: .5em;
+	padding-bottom: 3em;
+	text-transform: uppercase;
+	font-weight: 400;
+	background-color: #fbfbfb17;
+}
+
+.footer a{
+	color: black;
+	text-decoration: underline;
+}
+
+.clickable-row{
+	cursor: pointer;
+}
+
+.table-sm{
+	font-size: 80%;
+}
+
+
 
 code{
-	background-color: black;
-	color: white;
-	padding: 1em;
-	border-radius: .2em;
-	font-size 75%;
+	background-color: #c7b2f8;
+	color: #444444;
+	font-size: 59.5%;
+	border: solid;
+	border-width: 1px;
+	border-color: #3b0071;
+	padding: 0.3em;
 }
 
 
@@ -183,7 +213,6 @@ code{
 	font-size: 5em;
 }
 }
-
 
 
 

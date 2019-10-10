@@ -14,10 +14,4 @@ When you store files with Starling, it will store however many redundant copies 
 ## Proof of authenticity
 Why blindly trust a black-box like the cloud? How do you know if a storage provider is really doing what they say they are? With Starling, you have trustworthy, [openly documented](https://filecoin.io/#research), cryptographic proof that whoever you are paying to store your data really is doing what they say they are, and that your files have not been modified or become corrupt.
 
-<code>
-Demo Video will go here
-</code>
 
-## Use Cases
-
-## The Shoah Foundation

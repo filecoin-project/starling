@@ -4,7 +4,7 @@ title: Getting Started
 ---
 
 # Getting Started
-Starling is powered by the Filecoin protocol, and so before we can get started with installing and using Starling, we will need to install Filecoin, and get our node up and running. 
+Starling is powered by the [Filecoin](https://filecoin.io) protocol, and so before we can get started with installing and using Starling, we will need to install Filecoin, and get our node up and running. 
 
 
 ## Installing Filecoin
@@ -26,10 +26,12 @@ The first time you run Starling, you should have decided on the two following fa
 	starling config
 </code>
 
-Next, let’s test storing a folder of files using Starling. Go ahead and download some test files [here](). Note that you’ll have to prepare your files before storing them by breaking them up into appropriate sized chunks smaller than 256 mebibytes (MiB), equivalent to 1.049e+6 bytes. For Linux and Unix users, the split command is a great option for splitting your files—-check out [this article](https://www.linuxtechi.com/split-command-examples-for-linux-unix/) for examples. In the future, Staring hopes to handle data chunking for you.
+Next, let’s test storing a folder of files using Starling. Go ahead and download some test files [here](). Note that you’ll have to prepare your files before storing them by breaking them up into appropriate sized chunks smaller than 256 mebibytes (MiB), equivalent to 1.049e+6 bytes. For Linux and Unix users, the split command is a great option for splitting your files—-check out [this article](https://www.linuxtechi.com/split-command-examples-for-linux-unix/) for examples. We will be integrateing data chunking into the next round of Starling's development so that you don't have to do this process manually.
 
 To store a file or directory, just type:
 
 <code>
 	starling store [path/to/your/folder]
 </code>
+
+You're now up and running! Check out the [commands](commands.html) documentation for ideas on what to try next...

@@ -214,9 +214,6 @@ body{
 		max-width: 768px;
 	}
 
-	.middle h1{
-	font-size: 1.7em;
-}
 }
 
 @media only screen and (max-width: 995px) {

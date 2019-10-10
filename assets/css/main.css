@@ -61,17 +61,7 @@ html{
 	font-family: 'Roboto Mono', monospace ;
 }
 
-/*nav a{
-	font-size: .6em;
-	padding-left: 1.4em;
-	color: white;
-}*/
-/*
-nav a:hover{
-	background-color: none;
-	color: white;
-	text-decoration: underline;
-}*/
+
 
 nav{
 	z-index: 5;
@@ -86,10 +76,12 @@ nav{
 
 }
 
-.nav a {
-	font-weight: 100;
+.navbar-dark .navbar-nav .nav-link{
+		font-weight: 300;
 	color: white;
 }
+
+
 
 .logo{
 	position: absolute;
@@ -97,6 +89,10 @@ nav{
 	left: 48px;
 	padding-left: 15px;
 	line-height: 0;
+}
+
+.navbar-dark .navbar-toggler-icon{
+	background-image: url(../img/hamburger.png);
 }
 
 
@@ -203,11 +199,28 @@ code{
 	font-size: 2em;
 }
 
+}
+
 @media only screen and (max-width: 995px) {
   .github{
 	display: none;
 }
 }
+
+@media only screen and (min-width: 768px){
+	
+	body{
+		font-size: 70% !important;
+	}
+
+	.container{
+		padding: 0;
+		max-width: 768px;
+	}
+
+}
+
+
 
  @media only screen and (max-width : 1400px) {
 

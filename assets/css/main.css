@@ -43,6 +43,8 @@ a:hover{
 
 .mainbg{
 	position: fixed !important;
+	width: 100%;
+	height: 100%;
 }
 
 .container{
@@ -165,6 +167,12 @@ h5{
 	font-weight: 400;
 	background-color: #fbfbfb17;
 }
+
+.footer .row{
+	margin-left: 0;
+	margin-right: 0;
+}
+
 
 .footer a{
 	color: black;

@@ -229,6 +229,17 @@ body{
 	line-height: 1em;
 }
 
+
+
+}
+
+@media only screen and (min-width: 1200px){
+
+.container{
+		padding: 0;
+		max-width: 1000px;
+	}
+
 }
 
 @media only screen and (min-width: 1200px){

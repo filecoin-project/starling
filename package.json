@@ -23,6 +23,7 @@
     "lodash": "^4.17.15",
     "mkdirp": "^0.5.1",
     "progress": "^2.0.3",
+    "split-file": "^2.2.0",
     "sqlite3": "^4.1.0",
     "winston": "^3.2.1"
   },

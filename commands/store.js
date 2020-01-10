@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { sortBy, size, filter } = require('lodash');
 const chalk = require('chalk');
+const splitFile = require('split-file');
 
 const {
   Logger,
@@ -47,10 +48,35 @@ async function checkFileDirectory() {
   }
 }
 
-async function importFile(fc, file, { name, fileSize }) {
-  const cid = await fc.client.import(file);
+async function split(fc, originalFile) {
+  try {
+    const splitFiles = await splitFile.splitFileBySize(originalFile, 262144000);
+    const dirname = path.dirname(originalFile);
 
-  return [{ cid: cid, fileSize: fileSize, name: name }];
+    const splitFilesInfo = await Promise.all(
+      splitFiles.map(file => getInfo(file))
+    );
+
+    return await Promise.all(
+      splitFilesInfo.map(file => {
+        const { name } = file;
+
+        return importFile(fc, dirname + name, file);
+      })
+    );
+  } catch (err) {
+    return Promise.reject(err);
+  }
+}
+
+async function importFile(fc, file, { name, fileSize }) {
+  if (fileSize <= 262144000) {
+    const cid = await fc.client.import(file);
+
+    return [{ cid: cid, fileSize: fileSize, name: name }];
+  } else {
+    return await split(fc, file);
+  }
 }
 
 async function importFiles(fc, { status, name, fileSize }) {
@@ -227,6 +253,28 @@ async function ProposeDeals(fc, db, config, importedFiles, miners) {
   }
 }
 
+async function cleanImportedFiles(files) {
+  let data = [];
+
+  if (files.length === 1) {
+    return Promise.resolve(files);
+  }
+
+  files.map(file => {
+    if (file.length === 1) {
+      data.push(file);
+    } else {
+      file.map(file => {
+        data.push(file);
+      });
+    }
+  });
+
+  Logger.info(data);
+
+  return Promise.resolve(data);
+}
+
 async function store(fc) {
   try {
     const argInfo = await checkFileDirectory(fc);
@@ -238,6 +286,7 @@ async function store(fc) {
     console.clear();
 
     const importedFiles = await importFiles(fc, argInfo);
+    const files = await cleanImportedFiles(importedFiles);
 
     Logger.info(`\nIMPORTED FILES:`);
     Logger.info(importedFiles);
@@ -246,7 +295,7 @@ async function store(fc) {
       `\n📡  making filecoin storage deals for ${config.copies} redundant copies`
     );
 
-    await ProposeDeals(fc, db, config, importedFiles, miners);
+    await ProposeDeals(fc, db, config, files, miners);
 
     close(db);
   } catch (err) {

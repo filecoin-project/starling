@@ -161,7 +161,7 @@ function getTableData(db, callback) {
       } else {
         const rowData = [
           row.ID.toString(),
-          row.STATE,
+          row.STATE || '1',
           row.STATUS,
           truncate(row.NAME, 30),
           row.SIZE,
@@ -228,7 +228,7 @@ function getFilteredTableContent(db, param, callback) {
       } else {
         const rowData = [
           row.ID.toString(),
-          row.STATE,
+          row.STATE || '1',
           row.STATUS,
           truncate(row.NAME, 30),
           row.SIZE,

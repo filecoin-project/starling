@@ -71,7 +71,9 @@ async function split(fc, originalFile) {
 
 async function importFile(fc, file, { name, fileSize }) {
   if (fileSize <= 262144000) {
-    const cid = await fc.client.import(file);
+    const data = Buffer.from(file).toString('base64');
+
+    const cid = await fc.client.import(data);
 
     return [{ cid: cid, fileSize: fileSize, name: name }];
   } else {

@@ -1,4 +1,4 @@
-const dealTime = 2880; // 1 day
+const dealTime = 80640; // 1 month
 
 module.exports = {
   dealTime

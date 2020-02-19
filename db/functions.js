@@ -2,9 +2,9 @@ const { Logger, truncate, convertDate } = require('../utils');
 const { statuses } = require('../constants/statuses');
 const chalk = require('chalk');
 
-function insertFile(db, CID, name, fileSize, formattedSize, index) {
+function insertFile(db, uuid, CID, name, fileSize, formattedSize, index) {
   db.run(
-    `INSERT INTO CONTENT (CID,NAME,SIZE,SIZE_BYTES,STATUS,STATE,COPY_NUMBER,DATETIME_STARTED) VALUES ('${CID}','${name}','${formattedSize}','${fileSize}', 'queued', 'upload','${index}','00:00:00:00');`,
+    `INSERT INTO CONTENT (CID,UUID,NAME,SIZE,SIZE_BYTES,STATUS,STATE,COPY_NUMBER,DATETIME_STARTED) VALUES ('${CID}','${uuid}','${name}','${formattedSize}','${fileSize}', 'queued', 'upload','${index}','00:00:00:00');`,
     [],
     err => {
       if (err) {
@@ -145,6 +145,25 @@ function getStorageSpace(db, callback) {
     },
     function() {
       callback(space);
+    }
+  );
+}
+
+function getRetrievalFileInfo(db, uuid, callback) {
+  let info = [];
+
+  db.each(
+    `SELECT CID,NAME FROM CONTENT WHERE UUID='${uuid}'`,
+    (err, row) => {
+      if (err) {
+        Logger.error('db error');
+        Logger.error(err.stack);
+      } else {
+        info.push(row);
+      }
+    },
+    function() {
+      callback(info);
     }
   );
 }
@@ -316,6 +335,34 @@ function getVerifyList(db, callback) {
   );
 }
 
+function getSortedTableContent(db, param, callback) {
+  let data = [['jobId', 'type', 'status', 'content', 'size', 'elapsed time']];
+
+  db.each(
+    `SELECT ID,STATE,STATUS,NAME,SIZE,SIZE_BYTES,DATETIME_STARTED FROM CONTENT ORDER BY ${param} DESC`,
+    (err, row) => {
+      if (err) {
+        Logger.error('db error');
+        Logger.error(err.stack);
+      } else {
+        const rowData = [
+          row.ID.toString(),
+          row.STATE,
+          row.STATUS,
+          truncate(row.NAME, 30),
+          row.SIZE,
+          convertDate(row.DATETIME_STARTED)
+        ];
+
+        data.push(rowData);
+      }
+    },
+    function() {
+      callback(data);
+    }
+  );
+}
+
 module.exports = {
   insertFile,
   updateFile,
@@ -330,5 +377,7 @@ module.exports = {
   getRetryFiles,
   getStorageDeals,
   updateFileStatus,
-  getVerifyList
+  getVerifyList,
+  getSortedTableContent,
+  getRetrievalFileInfo
 };

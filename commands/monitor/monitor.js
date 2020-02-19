@@ -12,7 +12,8 @@ const {
   getTableDataNotQueued,
   getFilteredTableContent,
   getStorageDeals,
-  updateFileStatus
+  updateFileStatus,
+  getSortedTableContent
 } = require('../../db');
 const { getMiners } = require('../store');
 const {
@@ -22,13 +23,18 @@ const {
   getFooter,
   getInput
 } = require('./components');
+const { sortValues } = require('../../constants/sortValues');
 
 const regex = new RegExp('^[ -~]*$');
 const footerData = [
   [
     `${chalk.white.bgBlack(' ^F ')} Filter ${chalk.white.bgBlack(
       ' ^H '
-    )} hide queued`
+    )} hide queued ${chalk.white.bgBlack(
+      ' ^S '
+    )} sort by size ${chalk.white.bgBlack(
+      ' ^T '
+    )} sort by type ${chalk.white.bgBlack(' ^V ')} sort by content`
   ]
 ];
 
@@ -45,6 +51,16 @@ const footerExitFilter = [
     `${chalk.white.bgBlack(' esc ')} exit filter ${chalk.white.bgBlack(
       ' ^H '
     )} show queued`
+  ]
+];
+
+const footerSortData = [
+  [
+    `${chalk.white.bgBlack(' ^Q ')} exit sort ${chalk.white.bgBlack(
+      ' ^S '
+    )} sort by size ${chalk.white.bgBlack(
+      ' ^T '
+    )} sort by type ${chalk.white.bgBlack(' ^V ')} sort by content`
   ]
 ];
 
@@ -98,7 +114,7 @@ async function getMonitorData(fc, db) {
 
   const headerLeftData = [
     ``,
-    `Files stored in the network: ${chalk.hex('#A706E2')(files.length)}`,
+    `Files stored in the network: ${chalk.hex('#A706E2')(files.length || '')}`,
     `# of miners: ${chalk.hex('#A706E2')(miners.length)}`,
     `Storage space used: ${chalk.hex('#A706E2')(
       `${space ? formatBytes(space) : '0 Bytes'}`
@@ -128,7 +144,8 @@ async function monitor(fc, rate) {
     });
 
     let index = 1;
-    let paused = false;
+    let monitoringPaused = false;
+    let sortState = false;
 
     const refreshRate = rate * 1000 || 3000;
     const db = await connect();
@@ -169,7 +186,7 @@ async function monitor(fc, rate) {
           footer.setData(footerData);
           screen.render();
           userInput = '';
-          paused = false;
+          monitoringPaused = false;
           break;
 
         case 'enter':
@@ -204,16 +221,18 @@ async function monitor(fc, rate) {
           }
           break;
         case 'backspace':
-          if (paused) {
+          if (monitoringPaused && !sortState) {
             getTableData(db, data => {
-              paused = false;
+              monitoringPaused = false;
               table.setData(data.data);
               footer.setData(footerData);
               screen.render();
             });
+          } else if (!sortState) {
+            break;
           } else {
             getTableDataNotQueued(db, data => {
-              paused = true;
+              monitoringPaused = true;
               table.setData(data);
               footer.setData(footerShowQueued);
               screen.render();
@@ -221,13 +240,33 @@ async function monitor(fc, rate) {
           }
           break;
         case 'C-s':
+        case 'C-t':
+        case 'C-v':
+          monitoringPaused = true;
+          sortState = true;
+
+          getSortedTableContent(db, sortValues[key.full], data => {
+            table.setData(data);
+            footer.setData(footerSortData);
+            screen.render();
+          });
+          break;
+        case 'C-q':
+          sortState = false;
+          monitoringPaused = false;
+          index = 1;
+
+          footer.setData(footerData);
+          screen.render();
           break;
         case 'C-f':
           userInput = '';
-          paused = true;
-          footer.setData(footerExitFilter);
-          screen.render();
-          input.focus();
+          monitoringPaused = true;
+          if (!sortState) {
+            footer.setData(footerExitFilter);
+            screen.render();
+            input.focus();
+          }
 
           break;
         case 'escape':
@@ -246,7 +285,7 @@ async function monitor(fc, rate) {
         tableData
       } = await getMonitorData(fc, db);
 
-      if (!paused) {
+      if (!monitoringPaused) {
         headerRight.setItems(headerRightData);
         headerLeft.setItems(headerLeftData);
         table.setData(tableData);
@@ -258,7 +297,7 @@ async function monitor(fc, rate) {
     }, refreshRate);
 
     setInterval(async () => {
-      if (!paused) {
+      if (!monitoringPaused) {
         getStorageDeals(db, data => {
           updateDealStatus(fc, db, data);
         });

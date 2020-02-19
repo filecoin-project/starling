@@ -13,7 +13,9 @@ const {
   getRetryFiles,
   getStorageDeals,
   updateFileStatus,
-  getVerifyList
+  getVerifyList,
+  getSortedTableContent,
+  getRetrievalFileInfo
 } = require('./functions');
 
 module.exports = {
@@ -32,5 +34,7 @@ module.exports = {
   getRetryFiles,
   getStorageDeals,
   updateFileStatus,
-  getVerifyList
+  getVerifyList,
+  getSortedTableContent,
+  getRetrievalFileInfo
 };

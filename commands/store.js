@@ -3,6 +3,7 @@ const path = require('path');
 const { sortBy, size, filter } = require('lodash');
 const chalk = require('chalk');
 const splitFile = require('split-file');
+const uuidv4 = require('uuid/v4');
 
 const {
   Logger,
@@ -48,10 +49,11 @@ async function checkFileDirectory() {
   }
 }
 
-async function split(fc, originalFile) {
+async function split(fc, db, originalFile, totalCopies) {
   try {
-    const splitFiles = await splitFile.splitFileBySize(originalFile, 262144000);
+    const splitFiles = await splitFile.splitFileBySize(originalFile, 20971520);
     const dirname = path.dirname(originalFile);
+    const splitUuid = uuidv4();
 
     const splitFilesInfo = await Promise.all(
       splitFiles.map(file => getInfo(file))
@@ -61,7 +63,7 @@ async function split(fc, originalFile) {
       splitFilesInfo.map(file => {
         const { name } = file;
 
-        return importFile(fc, dirname + name, file);
+        return importFile(fc, db, dirname + name, file, totalCopies, splitUuid);
       })
     );
   } catch (err) {
@@ -69,26 +71,47 @@ async function split(fc, originalFile) {
   }
 }
 
-async function importFile(fc, file, { name, fileSize }) {
-  if (fileSize <= 262144000) {
-    const data = Buffer.from(file).toString('base64');
+async function importFile(
+  fc,
+  db,
+  file,
+  { name, fileSize },
+  totalCopies,
+  splitUuid
+) {
+  if (fileSize <= 20971520) {
+    const data = Buffer.from(file);
 
     const cid = await fc.client.import(data);
+    const formattedSize = formatBytes(fileSize);
+
+    for (let i = 0; i < totalCopies; i++) {
+      const uuid = splitUuid ? splitUuid : uuidv4();
+
+      insertFile(db, uuid, cid, name, fileSize, formattedSize, i + 1);
+    }
 
     return [{ cid: cid, fileSize: fileSize, name: name }];
   } else {
-    return await split(fc, file);
+    return await split(fc, db, file, totalCopies);
   }
 }
 
-async function importFiles(fc, { status, name, fileSize }) {
+async function importFiles(fc, db, { status, name, fileSize }, config) {
   const arg = process.argv[3];
   const formattedSize = formatBytes(fileSize);
+  const totalCopies = parseInt(config.copies, 10) || 3;
 
   if (status === 'file') {
     console.log(`🔍  Indexing file...`);
     console.log(`${chalk.hex('#A706E2')('==>')} ${formattedSize}`);
-    return await importFile(fc, arg, { name: name, fileSize: fileSize });
+    return await importFile(
+      fc,
+      db,
+      arg,
+      { name: name, fileSize: fileSize },
+      totalCopies
+    );
   } else if (status === 'directory') {
     Logger.info(`\nThis is directory ${name} of size ${formattedSize}`);
 
@@ -103,7 +126,7 @@ async function importFiles(fc, { status, name, fileSize }) {
 
     return await Promise.all(
       files.map((file, index) =>
-        importFile(fc, `${arg}/${file}`, allFilesInfo[index])
+        importFile(fc, db, `${arg}/${file}`, allFilesInfo[index], totalCopies)
       )
     );
   }
@@ -182,14 +205,6 @@ async function ProposeDeals(fc, db, config, importedFiles, miners) {
     const deals = await Promise.all(
       importedFiles.map(file => {
         const FILE = filesCount === 1 ? file : file[0];
-        const { cid, name, fileSize } = FILE;
-        const formattedSize = formatBytes(fileSize);
-
-        if (i === 0) {
-          for (let j = 0; j < totalCopies; j++) {
-            insertFile(db, cid, name, fileSize, formattedSize, j + 1);
-          }
-        }
 
         return proposeDeal(fc, db, FILE, miners, i);
       })
@@ -287,7 +302,7 @@ async function store(fc) {
     const miners = await getMiners(fc);
     console.clear();
 
-    const importedFiles = await importFiles(fc, argInfo);
+    const importedFiles = await importFiles(fc, db, argInfo, config);
     const files = await cleanImportedFiles(importedFiles);
 
     Logger.info(`\nIMPORTED FILES:`);

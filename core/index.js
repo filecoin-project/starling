@@ -272,10 +272,10 @@ class StarlingCore extends EventEmitter {
         if (numberOfFiles == 0) {
           this.emit('ERROR', `No files found for uuid: ${uuid}, copy number: ${copyNumber}`);
           return;
-        };
+        }
 
         this.emit('DOWNLOAD_START', {fileName: data[0].ORIGINAL_NAME, numberOfPieces: numberOfFiles});
-        await Promise.all( data.map(async (file, index) => {
+        await Promise.all( data.map(async (file) => {
           const { CID, NAME, DEAL_ID, ENCRYPTED, MINER_ID } = file;
           const storageDealProposal = await client.clientGetDealInfo(JSON.parse(DEAL_ID)).catch(err => this.emit('ERROR', err) );
           const marketStorageDeal = await client.stateMarketStorageDeal(storageDealProposal.DealID).catch(err => this.emit('ERROR', err) );

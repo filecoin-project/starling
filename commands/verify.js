@@ -1,7 +1,6 @@
-const { Logger, generateCSV } = require('../utils');
+const { generateCSV } = require('../utils');
 const { StarlingCore } = require('../core');
 const figlet = require('figlet');
-const { connect } = require('../core/infrastructure/db');
 const chalk  = require('chalk');
 
 async function verify() {

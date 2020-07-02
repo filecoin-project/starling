@@ -29,7 +29,7 @@ async function get() {
 
     const parsedArgs = [];
     let verbose = false;
-    for (i = 3; i < process.argv.length; i++){
+    for (let i = 3; i < process.argv.length; i++){
       if (process.argv[i] === 'debug') {
         verbose = true;
       } else {

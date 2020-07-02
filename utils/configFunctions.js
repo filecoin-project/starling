@@ -4,7 +4,8 @@ const inquirer = require('inquirer');
 
 const { configPath, configFile } = require('../constants/paths');
 const { questions } = require('../constants/questions');
-const { Logger } = require('./logger');
+const { Logger } = require('../core/infrastructure/log');
+const { generateEncryptionKey } = require('../core/application/resource/aes');
 
 async function createConfig(init) {
   mkdirp(configPath);
@@ -20,6 +21,14 @@ async function createConfig(init) {
   }
 
   const responses = await inquirer.prompt(questions);
+
+  if (responses.encryptionKey === 'yes') {
+    responses.encryptionKey = generateEncryptionKey();
+  } else if (responses.encryptionKey === 'no') {
+    responses.encryptionKey = '';
+  } else {
+    responses.encryptionKey = generateEncryptionKey(responses.encryptionKey);
+  }
   const json = JSON.stringify(responses);
 
   fs.writeFile(configFile, json, 'utf8');
@@ -27,16 +36,6 @@ async function createConfig(init) {
   console.log(
     '\n==> Thanks! If you’re just getting started, try “starling --help”, or read the docs at: https://github.com/filecoin-project/starling'
   );
-}
-
-async function checkHealth(fc) {
-  try {
-    await fc.id();
-  } catch (err) {
-    throw new Error(
-      "Error: couldn't connect to your filecoin node; please make sure your filecoin daemon is running and that your address is correct"
-    );
-  }
 }
 
 async function checkConfig() {
@@ -59,7 +58,6 @@ async function readConfig() {
 
 module.exports = {
   createConfig,
-  checkHealth,
   checkConfig,
   readConfig
 };

@@ -1,7 +1,7 @@
 const chalk = require('chalk');
 const { filter } = require('lodash');
 
-const { connect, close, getQueuedFilesInfo, getRetryFiles } = require('../db');
+const { connect, close, getQueuedFilesInfo, getRetryFiles } = require('../core/infrastructure/db');
 const {
   Logger,
   formatBytes,

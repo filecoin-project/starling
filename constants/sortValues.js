@@ -1,4 +1,4 @@
-const sortValues = { 'C-s': 'SIZE_BYTES', 'C-t': 'STATE', 'C-v': 'NAME' };
+const sortValues = { 'C-s': 'size', 'C-v': 'name' };
 
 module.exports = {
   sortValues

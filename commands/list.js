@@ -1,14 +1,33 @@
-const { connect, close, getStoredFileList } = require('../db');
 const { Logger, generateCSV } = require('../utils');
+const { StarlingCore } = require('../core');
+const figlet = require('figlet');
+const chalk = require('chalk');
 
 async function list() {
   try {
-    const db = await connect();
-    getStoredFileList(db, data => {
-      generateCSV(data, 'list');
-    });
+    console.log(figlet.textSync('Starling CLI', {
+      font: 'Standard',
+      horizontalLayout: 'default',
+      verticalLayout: 'default'
+    }));
+    console.log('\n');
 
-    close(db);
+    const core = new StarlingCore();
+    core.on('ERROR', error => {
+      if (!error) {
+        console.log(`\n🚫 Error occured`);
+      } else if (error.message) {
+        console.log(`\n🚫 Error: ${error.message}`);
+      } else {
+        console.log(`\n🚫 Error: ${error}`);
+      }
+    });
+    const { jobs } = await core.getListReport();
+
+    console.log(`🍿 Generating file...`);
+    const path = await generateCSV(jobs, 'list');
+    console.log(`\n✅ Successfully generated csv file`);
+    console.log(`=> Path: ${chalk.yellow(path)}\n`);
   } catch (err) {
     console.log('cannot connect to database');
     Logger.error(err.stack);

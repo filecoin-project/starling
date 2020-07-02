@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const Filecoin = require('filecoin-api-client');
+const { LotusWsClient } = require('./core/infrastructure/lotus/LotusWsClient');
 const commander = require('commander');
 const { Logger } = require('./utils');
 
@@ -11,38 +11,35 @@ program.version('0.5.6', '-v, --version', 'output the current version');
 program.name('starling').usage('<command> [command arguments] [--help]');
 program.helpOption('-h, --help', 'read more information');
 
-const { store, list, monitor, retry, verify } = require('./commands');
-const { checkHealth, createConfig } = require('./utils');
+const { store, list, monitor, retry, verify, get } = require('./commands');
+const { createConfig } = require('./utils');
 
 async function init() {
   try {
-    const { apiAddr } = process.env;
-
-    const fc = apiAddr
-      ? Filecoin({
-          apiAddr: apiAddr
-        })
-      : Filecoin({ apiAddr: '/ip4/127.0.0.1/tcp/3453/http' });
-
-    await checkHealth(fc);
-
     program
       .command('store')
       .description('path to file or folder you would like to store')
       .option('<path/to/folder>', 'store a folder')
       .option('<path/to/file>', 'store a file')
       .action(() => {
-        store(fc);
+        store();
       });
 
     program
       .command('retry')
       .description('retries to upload failed jobs')
       .action(() => {
-        retry(fc);
+        retry();
       });
 
-    program.command('get').description('retrieves/downloads a file');
+    program
+      .command('get')
+      .description('retrieves/downloads a file')
+      .option('<file id>', 'id of the file to retrieve')
+      .option('<output path>', 'path to where the retrieved file will be stored')
+      .action( () => {
+        get();
+      });
 
     program
       .command('monitor')
@@ -60,7 +57,7 @@ async function init() {
           throw new Error('\nplease provide a period of 3 seconds or greater');
         }
 
-        monitor(fc, process.argv[3]);
+        monitor(process.argv[3]);
       });
 
     program
@@ -105,7 +102,7 @@ async function init() {
 
     program.parse(process.argv);
   } catch (err) {
-    console.log(err.message);
+    console.log(err);
     Logger.error(err.stack);
   }
 }

@@ -1,8 +1,7 @@
-const { Logger } = require('./logger');
+const { Logger } = require('../core/infrastructure/log');
 const { progress, failedProgress, partialProgress } = require('./progress');
 const {
   checkConfig,
-  checkHealth,
   createConfig,
   readConfig
 } = require('./configFunctions');
@@ -15,7 +14,6 @@ module.exports = {
   Logger,
   progress,
   checkConfig,
-  checkHealth,
   createConfig,
   readConfig,
   failedProgress,

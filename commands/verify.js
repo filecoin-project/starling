@@ -1,18 +1,39 @@
-const { connect, close, getVerifyList } = require('../db');
 const { Logger, generateCSV } = require('../utils');
+const { StarlingCore } = require('../core');
+const figlet = require('figlet');
+const { connect } = require('../core/infrastructure/db');
+const chalk  = require('chalk');
 
 async function verify() {
-  try {
-    const db = await connect();
-    getVerifyList(db, data => {
-      generateCSV(data, 'verify');
-    });
+  console.log(figlet.textSync('Starling CLI', {
+    font: 'Standard',
+    horizontalLayout: 'default',
+    verticalLayout: 'default'
+  }));
+  console.log('\n');
 
-    close(db);
-  } catch (err) {
-    console.log('cannot connect to database');
-    Logger.error(err.stack);
-  }
+  const core  = new StarlingCore();
+  core.on('ERROR', error => {
+    let message = '';
+    if (!error) {
+      message = '\t🚫 Error occured';
+    } else if (error.message) {
+      message = `\t🚫 Error: ${error.message}`;
+    } else {
+      message = `\t🚫 Error: ${error}`;
+    }
+    console.log(message);
+    process.exit(0);
+  });
+
+  const data = await core.verify();
+  console.table(data);
+
+  console.log(`\n🍿 Generating file...`);
+  const path = await generateCSV(data, 'verify');
+  console.log(`\n✅ Successfully generated csv file`);
+  console.log(`=> Path: ${chalk.yellow(path)}\n`);
+  process.exit(0);
 }
 
 module.exports = {

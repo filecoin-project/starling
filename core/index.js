@@ -369,7 +369,7 @@ class StarlingCore extends EventEmitter {
             .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
             .then(async () => {
               if (isEncrypted) {
-                this.emit('DECRYPT_START', NAME);
+                this.emit('DECRYPT_START', fileName);
                 await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
               }
               this.emit('DOWNLOAD_SUCCESS', fileName);

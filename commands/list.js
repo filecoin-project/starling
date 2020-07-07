@@ -23,8 +23,9 @@ async function list() {
       }
     });
     const { jobs } = await core.getListReport();
+    console.table(jobs.slice(0, 10));
 
-    console.log(`🍿 Generating file...`);
+    console.log(`\n🍿 Generating file...`);
     const path = await generateCSV(jobs, 'list');
     console.log(`\n✅ Successfully generated csv file`);
     console.log(`=> Path: ${chalk.yellow(path)}\n`);

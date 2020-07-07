@@ -26,7 +26,7 @@ async function verify() {
   });
 
   const data = await core.verify();
-  console.table(data);
+  console.table(data.slice(0, 10));
 
   console.log(`\n🍿 Generating file...`);
   const path = await generateCSV(data, 'verify');

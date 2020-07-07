@@ -8,6 +8,7 @@ const { LotusWsClient } = require('./infrastructure/lotus/LotusWsClient');
 const { formatBytes, waitTimeout } = require('./application/resource/utils');
 const { encrypt, decrypt } = require('./application/resource/aes');
 const { Logger } = require('./infrastructure/log');
+const { shuffleArray } = require('../core/application/resource/shuffle');
 const { updateFile, insertFile, connect, close, getFilesByCid, getStoredFileList, getRetrievalFileInfo, getCompleteFileList } = require('./infrastructure/db');
 
 async function getPathInfo(pathName) {
@@ -232,7 +233,8 @@ class StarlingCore extends EventEmitter {
 
   async getMinersAsks() {
     const client = LotusWsClient.shared();
-    const miners = await client.listMiners();
+    let miners = await client.listMiners();
+    miners = shuffleArray(miners);
     const infos = await Promise.all(miners.map(miner => client.minerInfo(miner)));
     const peerIds = infos.map(info => info.PeerId);
     const storageAsks = await Promise.all(miners.map(async (miner, idx) => {

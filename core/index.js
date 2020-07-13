@@ -58,7 +58,7 @@ class StarlingCore extends EventEmitter {
     const uuid = `STRLNG-${shortid.generate()}`;
 
     for (let pathInfo of pathInfosForImport) {
-      for (let noOfCopy of noOfCopies) {
+      for (let i = 0; i < noOfCopies; i++) {
         const importedFile = await this.importFile(db, pathInfo, uuid, isEncrypted, originalName);
         importedFiles.push(importedFile);
 

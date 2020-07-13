@@ -136,7 +136,7 @@ class StarlingCore extends EventEmitter {
 
       this.emit('STORE_IMPORT_STARTED');
       const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
-
+      Logger.info(`imported files ${importedFiles}`);
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(pathInfosForImport, importedFiles, miners, noOfCopies, db, basePrice);
 

@@ -114,7 +114,7 @@ function getLeftHeaderData(jobs, miners, wallet) {
     `Storage space used: ${chalk.hex('#A706E2')(
       `${space ? formatBytes(space) : '0 Bytes'}`
     )}`,
-    `Wallet balance: ${chalk.hex('#A706E2')(`FIL ${balance * 10 ^ 18}`)}`
+    `Wallet balance: ${chalk.hex('#A706E2')(`FIL ${balance * Math.pow(10, -18)}`)}`
   ];
 
   return leftHeaderData;

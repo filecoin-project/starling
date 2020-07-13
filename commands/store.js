@@ -1,328 +1,118 @@
-const fs = require('fs-extra');
-const path = require('path');
-const { sortBy, size, filter } = require('lodash');
 const chalk = require('chalk');
-const splitFile = require('split-file');
-const uuidv4 = require('uuid/v4');
-
-const {
-  Logger,
-  progress,
-  readConfig,
-  partialProgress,
-  failedProgress
-} = require('../utils');
-const { updateFile, insertFile, connect, close } = require('../db');
+const ProgressBar = require('progress');
+const figlet = require('figlet');
+const { StarlingCore } = require('../core');
+const { readConfig } = require('../utils');
 const { checkConfig } = require('../utils');
-const { dealTime } = require('../constants/deals');
-const { formatBytes } = require('../utils');
 
-async function getInfo(arg) {
-  const stats = await fs.stat(arg);
-
-  const fileSize = stats.size;
-  const name = path.basename(arg);
-
-  if (stats.isFile()) {
-    return Promise.resolve({ status: 'file', name: name, fileSize: fileSize });
-  } else if (stats.isDirectory()) {
-    return Promise.resolve({
-      status: 'directory',
-      name: name,
-      fileSize: fileSize
-    });
-  }
-}
-
-async function checkFileDirectory() {
+async function checkArgs() {
   try {
     const argLength = process.argv.length;
-    const arg = process.argv[3];
 
     if (argLength !== 4) {
-      return Promise.reject('please provide 1 argument (file or directory)');
+      return Promise.reject('Please provide 1 argument (file or directory)');
     }
 
-    return await getInfo(arg);
   } catch (err) {
     return Promise.reject('no such file or directory');
   }
 }
 
-async function split(fc, db, originalFile, totalCopies) {
+async function store() {
   try {
-    const splitFiles = await splitFile.splitFileBySize(originalFile, 20971520);
-    const dirname = path.dirname(originalFile);
-    const splitUuid = uuidv4();
+    console.log(figlet.textSync('Starling CLI', {
+      font: 'Standard',
+      horizontalLayout: 'default',
+      verticalLayout: 'default'
+    }));
 
-    const splitFilesInfo = await Promise.all(
-      splitFiles.map(file => getInfo(file))
-    );
+    await checkArgs();
+    const pathName = process.argv[3];
 
-    return await Promise.all(
-      splitFilesInfo.map(file => {
-        const { name } = file;
-
-        return importFile(fc, db, dirname + name, file, totalCopies, splitUuid);
-      })
-    );
-  } catch (err) {
-    return Promise.reject(err);
-  }
-}
-
-async function importFile(
-  fc,
-  db,
-  file,
-  { name, fileSize },
-  totalCopies,
-  splitUuid
-) {
-  if (fileSize <= 20971520) {
-    const data = Buffer.from(file);
-
-    const cid = await fc.client.import(data);
-    const formattedSize = formatBytes(fileSize);
-
-    for (let i = 0; i < totalCopies; i++) {
-      const uuid = splitUuid ? splitUuid : uuidv4();
-
-      insertFile(db, uuid, cid, name, fileSize, formattedSize, i + 1);
-    }
-
-    return [{ cid: cid, fileSize: fileSize, name: name }];
-  } else {
-    return await split(fc, db, file, totalCopies);
-  }
-}
-
-async function importFiles(fc, db, { status, name, fileSize }, config) {
-  const arg = process.argv[3];
-  const formattedSize = formatBytes(fileSize);
-  const totalCopies = parseInt(config.copies, 10) || 3;
-
-  if (status === 'file') {
-    console.log(`🔍  Indexing file...`);
-    console.log(`${chalk.hex('#A706E2')('==>')} ${formattedSize}`);
-    return await importFile(
-      fc,
-      db,
-      arg,
-      { name: name, fileSize: fileSize },
-      totalCopies
-    );
-  } else if (status === 'directory') {
-    Logger.info(`\nThis is directory ${name} of size ${formattedSize}`);
-
-    const files = await fs.readdir(arg);
-    const allFilesInfo = await Promise.all(
-      files.map(file => getInfo(`${arg}/${file}`))
-    );
-
-    console.log(`🔍  Indexing folder...`);
-    console.log(`${chalk.hex('#A706E2')('==>')} ${allFilesInfo.length} files`);
-    console.log(`${chalk.hex('#A706E2')('==>')} ${formattedSize}`);
-
-    return await Promise.all(
-      files.map((file, index) =>
-        importFile(fc, db, `${arg}/${file}`, allFilesInfo[index], totalCopies)
-      )
-    );
-  }
-}
-
-async function getMiners(fc) {
-  const list = [];
-
-  for await (let item of fc.client.listAsks()) {
-    list.push(item);
-  }
-
-  return sortBy(list, ['price']);
-}
-
-function updateFileDB(db, name, deal, index) {
-  updateFile(db, name, deal, index);
-}
-
-async function proposeDeal(
-  fc,
-  db,
-  { cid, name },
-  miners,
-  index,
-  copyNumber,
-  bar
-) {
-  for (let i = 0; i < size(miners); i++) {
-    Logger.info(`storing ${name} with miner ${miners[i].miner}`);
-
-    try {
-      const storageDealProposal = await fc.client.proposeStorageDeal(
-        miners[i].miner,
-        cid,
-        miners[i].id,
-        dealTime,
-        { allowDuplicates: true }
-      );
-
-      const deal = {
-        dealID: storageDealProposal.proposalCid,
-        minerID: miners[i].miner,
-        signature: storageDealProposal.signature,
-        state: storageDealProposal.state,
-        CID: cid
-      };
-
-      Logger.info(storageDealProposal);
-      if (copyNumber) {
-        bar.tick();
-      }
-
-      updateFileDB(db, name, deal, copyNumber ? copyNumber : index + 1);
-
-      return Promise.resolve({ deal: 'accepted' });
-    } catch (err) {
-      if (err.code === 'ECONNREFUSED') {
-        break;
-      }
-      Logger.error(err.stack);
-      continue;
-    }
-  }
-}
-
-async function ProposeDeals(fc, db, config, importedFiles, miners) {
-  const filesCount = importedFiles.length;
-  const totalCopies = parseInt(config.copies, 10) || 3; // defaults to 3 in case someone manually edits the config file
-  let bar = progress(totalCopies);
-  let acceptedDeals = [];
-
-  bar.tick(0);
-
-  for (let i = 0; i < totalCopies; i++) {
-    const deals = await Promise.all(
-      importedFiles.map(file => {
-        const FILE = filesCount === 1 ? file : file[0];
-
-        return proposeDeal(fc, db, FILE, miners, i);
-      })
-    );
-
-    const accepted = filter(deals, { deal: 'accepted' }).length;
-
-    if (accepted === filesCount) {
-      bar.tick();
-      acceptedDeals[i] = { deal: 'full' };
-    } else if (accepted > 0) {
-      acceptedDeals[i] = { deal: 'partial' };
-    } else {
-      acceptedDeals[i] = { deal: 'failed' };
-    }
-  }
-
-  const full = filter(acceptedDeals, { deal: 'full' }).length;
-  const partial = filter(acceptedDeals, { deal: 'partial' }).length;
-  const failed = filter(acceptedDeals, { deal: 'failed' }).length;
-
-  if (full === totalCopies) {
-    console.log('\n\n✅  all storage deals successfully made!');
-    console.log(
-      `${chalk.hex('#A706E2')(
-        '==>'
-      )} monitor progress with the "starling monitor" command\n`
-    );
-  } else if (partial > 0 && full > 0) {
-    bar = partialProgress(totalCopies);
-    bar.tick(full);
-
-    console.log(
-      `\n\n ⚠️ Only enough deals were made to store ${full} complete copies`
-    );
-    console.log(
-      `${chalk.hex('#A706E2')(
-        '==>'
-      )} try increasing your $ per TB asking price\n`
-    );
-  } else if (full === 0 && partial > 0) {
-    bar = partialProgress(totalCopies);
-    bar.tick(partial);
-
-    console.log(
-      `\n\n ⚠️ only enough deals were made to store some of your files`
-    );
-    console.log(
-      `${chalk.hex('#A706E2')(
-        '==>'
-      )} try increasing your $ per TB asking price\n`
-    );
-  } else if (failed === totalCopies) {
-    bar = failedProgress();
-    bar.tick(1);
-
-    console.log('\n\n❌  No one accepted your storage proposals!');
-    console.log(
-      `${chalk.hex('#A706E2')(
-        '==>'
-      )} try increasing your $ per TB asking price\n`
-    );
-  }
-}
-
-async function cleanImportedFiles(files) {
-  let data = [];
-
-  if (files.length === 1) {
-    return Promise.resolve(files);
-  }
-
-  files.map(file => {
-    if (file.length === 1) {
-      data.push(file);
-    } else {
-      file.map(file => {
-        data.push(file);
-      });
-    }
-  });
-
-  Logger.info(data);
-
-  return Promise.resolve(data);
-}
-
-async function store(fc) {
-  try {
-    const argInfo = await checkFileDirectory(fc);
-    const db = await connect();
     await checkConfig();
     const config = await readConfig();
+    const basePrice = config.price;
+    const noOfCopies = parseInt(config.copies);
+    const encryptionKey = config.encryptionKey;
+    const core = new StarlingCore();
 
-    const miners = await getMiners(fc);
-    console.clear();
+    console.log('\nSummary:');
+    console.log('----------------------');
+    console.log(`file: ${chalk.yellow(pathName)}`);
+    console.log(`encryption: ${chalk.yellow(encryptionKey ? 'enabled' : 'disabled')}`);
+    console.log(`copies: ${chalk.yellow(noOfCopies)}`);
 
-    const importedFiles = await importFiles(fc, db, argInfo, config);
-    const files = await cleanImportedFiles(importedFiles);
+    console.log(`\n🍿 Storing file...\n`);
 
-    Logger.info(`\nIMPORTED FILES:`);
-    Logger.info(importedFiles);
+    const progressBar = new ProgressBar('[:bar] :percent :state', {
+      complete: '\u001b[43m \u001b[0m',
+      incomplete: ' ',
+      width: 80,
+      total: 70,
+      renderThrottle: 0,
+    });
+    progressBar.tick(10, {
+      state: '\t 🚀 Setting up...',
+    });
+    core.on('ERROR', error => {
+      let message = '';
+      if (!error) {
+        message = '\t🚫 Error occured';
+      } else if (error.message) {
+        message = `\t🚫 Error: ${error.message}`;
+      } else {
+        message = `\t🚫 Error: ${error}`;
+      }
+      progressBar.tick(10, {
+        state: message,
+      });
+    });
 
-    console.log(
-      `\n📡  making filecoin storage deals for ${config.copies} redundant copies`
-    );
+    core.on('STORE_FIND_MINERS_STARTED', () => {
+      progressBar.tick(20 - progressBar.curr, {
+        state: '\t🔍 Finding miners',
+      });
+    });
 
-    await ProposeDeals(fc, db, config, files, miners);
+    core.on('STORE_ENCRYPTION_STARTED', () => {
+      progressBar.tick(30 - progressBar.curr, {
+        state: '\t🔑 Encrypting file',
+      });
+    });
 
-    close(db);
+    core.on('STORE_FILE_SPLIT_STARTED', () => {
+      progressBar.tick(40 - progressBar.curr, {
+        state: '\t🔪 Splitting file',
+      });
+    });
+
+    core.on('STORE_IMPORT_STARTED', () => {
+      progressBar.tick(50 - progressBar.curr, {
+        state: '\t📁 Importing file',
+      });
+    });
+
+    core.on('STORE_DEALS_STARTED', () => {
+      progressBar.tick(60 - progressBar.curr, {
+        state: '\t💰 Making deals with miners',
+      });
+    });
+
+    core.on('STORE_DONE', () => {
+      progressBar.tick(70 - progressBar.curr, {
+        state: '\t✅ Storage deals done!',
+      });
+      console.log(`\nYou can track the status of storage deals using ${chalk.yellow('starling monitor')} command.\n`);
+      process.exit(0);
+    });
+
+    await core.store(pathName, basePrice, noOfCopies, encryptionKey);
+
   } catch (err) {
-    console.log('error storing files');
-    Logger.error(err.stack);
+    console.log(err);
   }
 }
 
 module.exports = {
   store,
-  getMiners,
-  proposeDeal
 };

@@ -1,21 +1,14 @@
 const blessed = require('blessed');
 const chalk = require('chalk');
+const { StarlingCore } = require('../../core');
+const { LotusWsClient } = require('../../core/infrastructure/lotus/LotusWsClient');
 
-const { Logger, formatBytes } = require('../../utils');
+const { Logger, formatBytes, convertDate, truncate } = require('../../utils');
 const {
   connect,
-  getStorageSpace,
-  getStoredFileList,
-  getQueuedFileList,
-  getActiveFileList,
-  getTableData,
-  getTableDataNotQueued,
-  getFilteredTableContent,
   getStorageDeals,
   updateFileStatus,
-  getSortedTableContent
-} = require('../../db');
-const { getMiners } = require('../store');
+} = require('../../core/infrastructure/db');
 const {
   getHeaderRight,
   getHeaderLeft,
@@ -29,28 +22,14 @@ const regex = new RegExp('^[ -~]*$');
 const footerData = [
   [
     `${chalk.white.bgBlack(' ^F ')} Filter ${chalk.white.bgBlack(
-      ' ^H '
-    )} hide queued ${chalk.white.bgBlack(
       ' ^S '
-    )} sort by size ${chalk.white.bgBlack(
-      ' ^T '
-    )} sort by type ${chalk.white.bgBlack(' ^V ')} sort by content`
-  ]
-];
-
-const footerShowQueued = [
-  [
-    `${chalk.white.bgBlack(' ^F ')} Filter ${chalk.white.bgBlack(
-      ' ^H '
-    )} show queued`
+    )} sort by size ${chalk.white.bgBlack(' ^V ')} sort by content`
   ]
 ];
 
 const footerExitFilter = [
   [
-    `${chalk.white.bgBlack(' esc ')} exit filter ${chalk.white.bgBlack(
-      ' ^H '
-    )} show queued`
+    `${chalk.white.bgBlack(' esc ')} exit filter`
   ]
 ];
 
@@ -58,9 +37,7 @@ const footerSortData = [
   [
     `${chalk.white.bgBlack(' ^Q ')} exit sort ${chalk.white.bgBlack(
       ' ^S '
-    )} sort by size ${chalk.white.bgBlack(
-      ' ^T '
-    )} sort by type ${chalk.white.bgBlack(' ^V ')} sort by content`
+    )} sort by size ${chalk.white.bgBlack(' ^V ')} sort by content`
   ]
 ];
 
@@ -88,56 +65,64 @@ function progress({ queued, active }) {
     drawQueued
   )} ${chalk.white(`${percent}%`)}`;
 }
+function getTableData(jobs) {
+  let data = ['id', 'name', 'status', 'size', 'encryption', 'no. copies', 'elapsed time'];
 
-async function getMonitorData(fc, db) {
-  let space, files, queued, active, tableData;
+  const list = jobs.map(job => {
+    const {
+      uuid,
+      name,
+      status,
+      size,
+      encryption,
+      date,
+      totalCopies
+    } = job;
 
-  getStorageSpace(db, data => {
-    space = data;
-  });
-  getStoredFileList(db, data => {
-    files = data;
-  });
-  getQueuedFileList(db, data => {
-    queued = data;
-  });
-  getActiveFileList(db, data => {
-    active = data;
-  });
-  getTableData(db, data => {
-    tableData = data;
+    return [uuid, truncate(name, 30), status, formatBytes(size), encryption, `${totalCopies}`, convertDate(date)]
   });
 
-  const miners = await getMiners(fc);
-  const walletAddress = (await fc.address.ls())[0];
-  const walletBalance = await fc.wallet.balance(walletAddress);
+  return [
+    data,
+    ...list,
+  ];
+}
 
-  const headerLeftData = [
+function getRightHeaderData(jobs) {
+  const jobsCount = jobs.length || 0;
+  const rightHeader = [
+    '',
+    `Active jobs: ${chalk.hex('#00E900')(jobsCount)}`,
+    `Queued jobs: ${chalk.hex('#00E900')(0)}`,
     ``,
-    `Files stored in the network: ${chalk.hex('#A706E2')(files.length || '')}`,
-    `# of miners: ${chalk.hex('#A706E2')(miners.length)}`,
+    `${progress({ active: jobsCount, queued: 0 })}`
+  ];
+
+  return rightHeader;
+}
+
+function getLeftHeaderData(jobs, miners, wallet) {
+  const jobsCount = jobs.length || 0;
+  const minersCount = miners.length || 0;
+  const balance = wallet.balance || 0;
+  const space = jobs.reduce((acc, job) => job.size + acc, 0 );
+
+  const leftHeaderData = [
+    ``,
+    `Files stored in the network: ${chalk.hex('#A706E2')(jobsCount)}`,
+    `# of miners: ${chalk.hex('#A706E2')(minersCount)}`,
     `Storage space used: ${chalk.hex('#A706E2')(
       `${space ? formatBytes(space) : '0 Bytes'}`
     )}`,
-    `Wallet balance: ${chalk.hex('#A706E2')(`$fil ${walletBalance}`)}`
+    `Wallet balance: ${chalk.hex('#A706E2')(`attoFil ${balance}`)}`
   ];
 
-  const headerRightData = [
-    '',
-    `Active jobs: ${chalk.hex('#00E900')(active)}`,
-    `Queued jobs: ${chalk.hex('#00E900')(queued)}`,
-    ``,
-    `${progress({ active, queued })}`
-  ];
-
-  return {
-    headerLeftData,
-    headerRightData,
-    tableData
-  };
+  return leftHeaderData;
 }
 
-async function monitor(fc, rate) {
+async function monitor(rate) {
+  const client = LotusWsClient.shared();
+
   try {
     const screen = blessed.screen({
       smartCSR: true
@@ -147,17 +132,25 @@ async function monitor(fc, rate) {
     let monitoringPaused = false;
     let sortState = false;
 
-    const refreshRate = rate * 1000 || 3000;
+    const refreshRate = rate * 1000 || 5000;
     const db = await connect();
 
-    const { headerRightData, headerLeftData, tableData } = await getMonitorData(
-      fc,
-      db
-    );
+    const core = new StarlingCore();
+    core.on('ERROR', error => {
+      if (!error) {
+        console.log(`\n🚫 Error occured`);
+      } else if (error.message) {
+        console.log(`\n🚫 Error: ${error.message}`);
+      } else {
+        console.log(`\n🚫 Error: ${error}`);
+      }
+    });
+    const { miners, jobs, wallet } = await core.getReport();
 
-    const headerRight = getHeaderRight(headerRightData);
-    const headerLeft = getHeaderLeft(headerLeftData);
-    const table = getTable(tableData);
+
+    const headerRight = getHeaderRight(getRightHeaderData(jobs));
+    const headerLeft = getHeaderLeft(getLeftHeaderData(jobs, miners, wallet));
+    const table = getTable(getTableData(jobs));
     const footer = getFooter(footerData);
     const input = getInput();
 
@@ -175,10 +168,9 @@ async function monitor(fc, rate) {
       switch (key.full) {
         case 'backspace':
           userInput = userInput.slice(0, -1);
-          getFilteredTableContent(db, userInput, data => {
-            table.setData(data);
-            screen.render();
-          });
+
+          table.setData(getTableData(jobs.filter(job => job.name.toLowerCase().includes(userInput.toLowerCase()))));
+          screen.render();
           break;
 
         case 'escape':
@@ -196,11 +188,8 @@ async function monitor(fc, rate) {
           if (data && regex.test(data)) {
             userInput = userInput + data;
           }
-
-          getFilteredTableContent(db, userInput, data => {
-            table.setData(data);
-            screen.render();
-          });
+          table.setData(getTableData(jobs.filter(job => job.name.toLowerCase().includes(userInput.toLowerCase()))));
+          screen.render();
 
           break;
       }
@@ -216,40 +205,18 @@ async function monitor(fc, rate) {
           break;
         case 'down':
           table.down();
-          if (index < tableData.length) {
+          if (index < jobs.length) {
             index++;
           }
           break;
-        case 'backspace':
-          if (monitoringPaused && !sortState) {
-            getTableData(db, data => {
-              monitoringPaused = false;
-              table.setData(data.data);
-              footer.setData(footerData);
-              screen.render();
-            });
-          } else if (!sortState) {
-            break;
-          } else {
-            getTableDataNotQueued(db, data => {
-              monitoringPaused = true;
-              table.setData(data);
-              footer.setData(footerShowQueued);
-              screen.render();
-            });
-          }
-          break;
         case 'C-s':
-        case 'C-t':
         case 'C-v':
           monitoringPaused = true;
           sortState = true;
 
-          getSortedTableContent(db, sortValues[key.full], data => {
-            table.setData(data);
-            footer.setData(footerSortData);
-            screen.render();
-          });
+          table.setData(getTableData(jobs.sort((job1, job2) => job1[sortValues[key.full]] > job2[sortValues[key.full]] ? 1 : -1)));
+          footer.setData(footerSortData);
+          screen.render();
           break;
         case 'C-q':
           sortState = false;
@@ -279,16 +246,11 @@ async function monitor(fc, rate) {
     });
 
     setInterval(async () => {
-      const {
-        headerRightData,
-        headerLeftData,
-        tableData
-      } = await getMonitorData(fc, db);
-
       if (!monitoringPaused) {
-        headerRight.setItems(headerRightData);
-        headerLeft.setItems(headerLeftData);
-        table.setData(tableData);
+        const { miners, jobs, wallet } = await core.getReport();
+        headerRight.setItems(getRightHeaderData(jobs));
+        headerLeft.setItems(getLeftHeaderData(jobs, miners, wallet));
+        table.setData(getTableData(jobs));
         table.select(index);
         screen.render();
       } else {
@@ -298,48 +260,39 @@ async function monitor(fc, rate) {
 
     setInterval(async () => {
       if (!monitoringPaused) {
-        getStorageDeals(db, data => {
-          updateDealStatus(fc, db, data);
-        });
+        const storageDeals = await getStorageDeals(db);
+        updateDealStatus(client, db, storageDeals);
       }
-    }, 30000); // get the status of the deals every 30 seconds
+    }, 5000); // get the status of the deals every 5 seconds
   } catch (err) {
-    Logger.error(err.stack);
+    Logger.error(err);
     process.exit(0);
   }
 }
 
-async function updateDealStatus(fc, db, data) {
+async function updateDealStatus(client, db, data) {
   try {
     await Promise.all(
       data.map(async deal => {
         const { dealId, cid, copyNumber, commD_old } = deal;
         const init = commD_old ? false : true;
+        const storageDeal = await client.clientGetDealInfo(JSON.parse(dealId));
 
-        const storageDeal = await fc.client.queryStorageDeal(dealId);
-
-        const {
-          state,
-          proofInfo: { commD, commR, commRStar }
-        } = storageDeal;
-
-        const fixityResult = commD === commD_old ? 'pass' : 'FAIL';
-
-        updateFileStatus(
+        await updateFileStatus(
           db,
           cid,
           copyNumber,
-          state,
-          commD,
-          commR,
-          commRStar,
-          fixityResult,
+          storageDeal.State,
+          '',
+          '',
+          '',
+          '',
           init
         );
       })
     );
   } catch (err) {
-    Logger.error(err.stack);
+    Logger.error(err);
   }
 }
 

@@ -2,8 +2,8 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs-extra');
 
 const { dbSchema } = require('./schema');
-const { Logger } = require('../utils');
-const { dbPath } = require('../constants/paths');
+const { Logger } = require('../../../utils');
+const { dbPath } = require('../../../constants/paths');
 
 let init = false;
 

@@ -2,6 +2,9 @@
 
 A command-line interface for simplified, coordinated, decentralized storage on the Filecoin network. This is a work in progress and is not yet production-ready. Use at your own risk.
 
+## Requirements
+
+Starling CLI requires a machine running a Filecoin Lotus node and NodeJS v10.16.0 +
 
 ## Development
 
@@ -29,10 +32,11 @@ Starling uses an [sqlite3](https://www.npmjs.com/package/sqlite3) database. The 
 
 ## API Address Config
 
-The default API Address is localhost, in cases where Starling and the filecoin node are on the same machine. In order to connect to a remote filecoin node, create a `.env` file in the root directory of the project and insert the API Adress as such:
+In order to connect to a filecoin node, create a `.env` file in the root directory of the project with the following variables:
 
 ```j
-apiAddr='/ip4/<Filecoin Node IP Address>/tcp/3453/'
+LOTUS_URL=ws://<ip address of Filecoin node>/rpc/v0
+LOTUS_AUTH_TOKEN=<Lotus RPC API authorization token with admin permissions>
 ```
 
 ## Commands
@@ -46,13 +50,13 @@ Modify the config file `HOME/.starling/config.json`
 Store a single file
 
 ```js
-> starling store path/to/file.jpg
+> starling store full/path/to/file
 ```
 
 Store a folder
 
 ```js
-> starling store path/to/folder
+> starling store full/path/to/folder
 ```
 
 Launch interactive monitoring interface
@@ -61,7 +65,7 @@ Launch interactive monitoring interface
 > starling monitor
 
 // up/down keys: scroll through the list
-// ^H: hide/show queued files
+// ^S sort by size, ^V sort by filename
 // ^F: filter all files
 ```
 
@@ -83,12 +87,6 @@ Generate a CSV report of file fixity
 
 // outputs file in the specified directory
 > starling verify <path>
-```
-
-Retry uploading the failed jobs
-
-```js
-> starling retry
 ```
 
 Output the version number

@@ -4,10 +4,8 @@ const {
   insertFile,
   getStoredFileList,
   getStorageSpace,
-  getQueuedFileList,
-  getActiveFileList,
-  getTableData,
-  getTableDataNotQueued,
+  getQueuedFileListCount,
+  getActiveFileListCount,
   getFilteredTableContent,
   getQueuedFilesInfo,
   getRetryFiles,
@@ -15,7 +13,11 @@ const {
   updateFileStatus,
   getVerifyList,
   getSortedTableContent,
-  getRetrievalFileInfo
+  getRetrievalFileInfo,
+  getFilesByCid,
+  getJobStatus,
+  getActiveFileList,
+  getCompleteFileList
 } = require('./functions');
 
 module.exports = {
@@ -25,10 +27,8 @@ module.exports = {
   insertFile,
   getStoredFileList,
   getStorageSpace,
-  getQueuedFileList,
-  getActiveFileList,
-  getTableData,
-  getTableDataNotQueued,
+  getQueuedFileListCount,
+  getActiveFileListCount,
   getFilteredTableContent,
   getQueuedFilesInfo,
   getRetryFiles,
@@ -36,5 +36,9 @@ module.exports = {
   updateFileStatus,
   getVerifyList,
   getSortedTableContent,
-  getRetrievalFileInfo
+  getRetrievalFileInfo,
+  getFilesByCid,
+  getJobStatus,
+  getActiveFileList,
+  getCompleteFileList
 };

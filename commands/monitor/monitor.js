@@ -146,11 +146,11 @@ async function monitor(rate) {
       }
     });
     const { miners, jobs, wallet } = await core.getReport();
+    const filteredJobs = jobs.filter(job => job.status !== 'STORED');
 
-
-    const headerRight = getHeaderRight(getRightHeaderData(jobs));
+    const headerRight = getHeaderRight(getRightHeaderData(filteredJobs));
     const headerLeft = getHeaderLeft(getLeftHeaderData(jobs, miners, wallet));
-    const table = getTable(getTableData(jobs));
+    const table = getTable(getTableData(filteredJobs));
     const footer = getFooter(footerData);
     const input = getInput();
 
@@ -248,9 +248,10 @@ async function monitor(rate) {
     setInterval(async () => {
       if (!monitoringPaused) {
         const { miners, jobs, wallet } = await core.getReport();
-        headerRight.setItems(getRightHeaderData(jobs));
+        const filteredJobs = jobs.filter(job => job.status !== 'STORED');
+        headerRight.setItems(getRightHeaderData(filteredJobs));
         headerLeft.setItems(getLeftHeaderData(jobs, miners, wallet));
-        table.setData(getTableData(jobs));
+        table.setData(getTableData(filteredJobs));
         table.select(index);
         screen.render();
       } else {

@@ -336,6 +336,7 @@ class StarlingCore extends EventEmitter {
               this.emit('DOWNLOAD_FAIL_PIECE', NAME);
             }
             Logger.info(`failed to download ${NAME}`);
+            Logger.info(JSON.stringify(err));
             return;
           }
 

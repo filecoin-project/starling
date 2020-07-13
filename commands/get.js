@@ -69,14 +69,16 @@ async function get() {
 
     core.on('ERROR', error => {
       progressBar.tick(10, {
-        state: `\n🚫 Error: ${error}`,
+        state: `\n🚫 Error `,
       });
+      console.log(error);
     });
 
     core.on('ERROR_PIECE', error => {
       progressBar.tick(10, {
-        state: `\n🚫 Error: ${error}`,
+        state: `\n🚫 Error `,
       });
+      console.log(error);
     });
 
     core.on('DOWNLOAD_START', data => {

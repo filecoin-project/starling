@@ -4,6 +4,7 @@ const figlet = require('figlet');
 const { StarlingCore } = require('../core');
 const { readConfig } = require('../utils');
 const { checkConfig } = require('../utils');
+const { Logger } = require('../core/infrastructure/log');
 
 async function checkArgs() {
   try {
@@ -55,6 +56,7 @@ async function store() {
       state: '\t 🚀 Setting up...',
     });
     core.on('ERROR', error => {
+      Logger.info(error);
       let message = '';
       if (!error) {
         message = '\t🚫 Error occured';

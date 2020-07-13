@@ -216,7 +216,8 @@ class StarlingCore extends EventEmitter {
       }, 0) + 1;
       validUuid = existingFiles[0].UUID;
     }
-
+    Logger.info(`Previous found elements: ${existingFiles.length}`);
+    Logger.info(`Add file ${uuid}, copy ${copyNumber}`);
     await insertFile(db, validUuid, JSON.stringify(cid), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
 
     return {

@@ -72,35 +72,25 @@ class StarlingCore extends EventEmitter {
     return importedFiles;
   }
 
-  async makeDeals(pathInfosForImport, importedFiles, miners, noOfCopies, db, basePrice) {
-    for (let pathInfo of pathInfosForImport) {
-      let copiesCount = 0;
+  async makeDeals(importedFiles, miners, noOfCopies, db, basePrice) {
+    for (let importedFile of importedFiles) {
       for (let miner of miners) {
-        if (copiesCount === noOfCopies) {
-          break;
-        }
-        Logger.info(`storing ${pathInfo.fileName} with miner ${miner}`);
-
         try {
-          const deal = await this.proposeDeal(
+          await this.proposeDeal(
             db,
-            importedFiles[pathInfosForImport.indexOf(pathInfo)].cid,
-            pathInfo.fileName,
-            pathInfo.fileSize,
+            importedFile.cid,
+            importedFile.fileName,
+            importedFile.fileSize,
             miner.miner,
             basePrice,
-            importedFiles[pathInfosForImport.indexOf(pathInfo)].copyNumber,
+            importedFile.copyNumber,
           );
-          copiesCount = copiesCount + 1;
-          this.emit('STORE_DEAL_MADE', {
-            cid: deal.cid,
-            miner: deal.miner,
-            fileName: pathInfo.fileName,
-          });
+          break;
         } catch (err) {
           Logger.error(err);
         }
       }
+
     }
   }
 
@@ -138,7 +128,7 @@ class StarlingCore extends EventEmitter {
       const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
       Logger.info(`imported files ${JSON.stringify(importedFiles)}`);
       this.emit('STORE_DEALS_STARTED');
-      await this.makeDeals(pathInfosForImport, importedFiles, miners, noOfCopies, db, basePrice);
+      await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
 
       this.emit('STORE_DONE');
       close(db);
@@ -216,11 +206,11 @@ class StarlingCore extends EventEmitter {
       }, 0) + 1;
       validUuid = existingFiles[0].UUID;
     }
-    Logger.info(`Previous found elements: ${existingFiles.length}`);
-    Logger.info(`Add file ${uuid}, copy ${copyNumber}`);
+
     await insertFile(db, validUuid, JSON.stringify(cid), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
 
     return {
+      ...pathInfo,
       cid,
       copyNumber,
     };

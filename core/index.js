@@ -53,18 +53,20 @@ class StarlingCore extends EventEmitter {
     return splitFilesInfo;
   }
 
-  async importFiles(pathInfosForImport, db, isEncrypted, originalName) {
+  async importFiles(pathInfosForImport, db, isEncrypted, originalName, noOfCopies) {
     const importedFiles = [];
     const uuid = `STRLNG-${shortid.generate()}`;
 
     for (let pathInfo of pathInfosForImport) {
-      const importedFile = await this.importFile(db, pathInfo, uuid, isEncrypted, originalName);
-      importedFiles.push(importedFile);
+      for (let noOfCopy of noOfCopies) {
+        const importedFile = await this.importFile(db, pathInfo, uuid, isEncrypted, originalName);
+        importedFiles.push(importedFile);
 
-      this.emit('STORE_FILE_IMPORT', {
-        cid: importedFile.cid,
-        fileName: pathInfo.fileName,
-      });
+        this.emit('STORE_FILE_IMPORT', {
+          cid: importedFile.cid,
+          fileName: pathInfo.fileName,
+        });
+      }
     }
 
     return importedFiles;
@@ -133,7 +135,7 @@ class StarlingCore extends EventEmitter {
       }
 
       this.emit('STORE_IMPORT_STARTED');
-      const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName);
+      const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
 
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(pathInfosForImport, importedFiles, miners, noOfCopies, db, basePrice);

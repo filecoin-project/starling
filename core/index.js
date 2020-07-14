@@ -500,67 +500,58 @@ class StarlingCore extends EventEmitter {
       const db = await connect();
       const client = LotusWsClient.shared();
       const files = await getCompleteFileList(db);
-      const mapByUuid = files.reduce((acc, file) => {
-        const accByUuid = acc[file.UUID] || {};
-        return {
-          ...acc,
-          [file.UUID]: {
-            ...accByUuid,
-            [file.CID]: [...(accByUuid[file.CID] || []), file.STATUS],
-          }}
-      }, {});
-      const filteredMapByUuid = Object.keys(mapByUuid).reduce((acc, uuid) => {
-        const cids = Object.keys(mapByUuid[uuid]);
-        const result = cids.reduce((acc, cid) => {
-          const valid = mapByUuid[uuid][cid].filter(status => status === 'DEAL_ACTIVE').length === mapByUuid[uuid][cid].length;
-          return valid ? mapByUuid[uuid] : null;
-        }, {})
+      let map = {};
 
-        return !result ? acc : {
-          ...acc,
-          [uuid]: result
-        };
-      }, {});
+      for (const file of files) {
+        const uuid = file['UUID'];
+        const mapByUuid = map[uuid] || {};
+        const mapByUuidAndCopyNumber = mapByUuid[file.COPY_NUMBER] || [];
+        const dealInfo = await client.clientGetDealInfo(JSON.parse(file.DEAL_ID)).catch(() => null);
 
-      const results = {};
-
-      for (let uuid of Object.keys(filteredMapByUuid)) {
-        const cids = Object.keys(filteredMapByUuid[uuid]);
-
-        let cidResults = [];
-        for (let cid of cids) {
-          const findResult = await client.clientFindData(JSON.parse(cid));
-
-          if (findResult.length === 0) {
-            cidResults.push(false);
-          } else if (!findResult[0]['Size']) {
-            cidResults.push(false)
-          } else {
-            cidResults.push(true)
+        if (!dealInfo) {
+          map = {
+            ...map,
+            [uuid]: {
+              ...mapByUuid,
+              [file.COPY_NUMBER]: [...mapByUuidAndCopyNumber, { slashed: true }]
+            }
           }
-        }
-
-        if (cidResults.filter(cidResult => !!cidResult).length === cids.length) {
-          results[uuid] = 'passed';
         } else {
-          results[uuid] = 'failed';
+          if (dealInfo['State'] !== 6) {
+            break;
+          }
+
+          const dealID = dealInfo['DealID'];
+          const stateDealInfo = await client.stateMarketStorageDeal(dealID);
+          const slashed = stateDealInfo['State']['SlashEpoch'] !== -1;
+          map = {
+            ...map,
+            [uuid]: {
+              ...mapByUuid,
+              [file.COPY_NUMBER]: [...mapByUuidAndCopyNumber, { slashed }]
+            }
+          }
         }
       }
 
-      const data = Object.keys(results).map(uuid => {
+      const data = Object.keys(map).map((uuid) => {
         const filterFiles = files.filter(file => file.UUID === uuid);
         const name = filterFiles[0].ORIGINAL_NAME;
         const date = filterFiles[0].DATETIME_STARTED;
+        const copiesMap = map[uuid];
+        const valid = Object.keys(copiesMap).reduce((acc, copyNumber) => {
+          return acc ? acc : !copiesMap[copyNumber].reduce((acc, slashObject) => acc ? acc : slashObject.slashed, false);
+        }, false);
 
         return {
           uuid,
           name,
-          fixityCheck: results[uuid],
+          fixityCheck: valid ? 'passed' : 'failed',
           date,
         }
       });
-      close(db);
 
+      close(db);
       return data;
     } catch (error) {
       this.emit('ERROR', error);

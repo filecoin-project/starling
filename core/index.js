@@ -53,52 +53,44 @@ class StarlingCore extends EventEmitter {
     return splitFilesInfo;
   }
 
-  async importFiles(pathInfosForImport, db, isEncrypted, originalName) {
+  async importFiles(pathInfosForImport, db, isEncrypted, originalName, noOfCopies) {
     const importedFiles = [];
     const uuid = `STRLNG-${shortid.generate()}`;
 
     for (let pathInfo of pathInfosForImport) {
-      const importedFile = await this.importFile(db, pathInfo, uuid, isEncrypted, originalName);
-      importedFiles.push(importedFile);
+      for (let i = 0; i < noOfCopies; i++) {
+        const importedFile = await this.importFile(db, pathInfo, uuid, isEncrypted, originalName);
+        importedFiles.push(importedFile);
 
-      this.emit('STORE_FILE_IMPORT', {
-        cid: importedFile.cid,
-        fileName: pathInfo.fileName,
-      });
+        this.emit('STORE_FILE_IMPORT', {
+          cid: importedFile.cid,
+          fileName: pathInfo.fileName,
+        });
+      }
     }
 
     return importedFiles;
   }
 
-  async makeDeals(pathInfosForImport, importedFiles, miners, noOfCopies, db, basePrice) {
-    for (let pathInfo of pathInfosForImport) {
-      let copiesCount = 0;
+  async makeDeals(importedFiles, miners, noOfCopies, db, basePrice) {
+    for (let importedFile of importedFiles) {
       for (let miner of miners) {
-        if (copiesCount === noOfCopies) {
-          break;
-        }
-        Logger.info(`storing ${pathInfo.fileName} with miner ${miner}`);
-
         try {
-          const deal = await this.proposeDeal(
+          await this.proposeDeal(
             db,
-            importedFiles[pathInfosForImport.indexOf(pathInfo)].cid,
-            pathInfo.fileName,
-            pathInfo.fileSize,
+            importedFile.cid,
+            importedFile.fileName,
+            importedFile.fileSize,
             miner.miner,
             basePrice,
-            importedFiles[pathInfosForImport.indexOf(pathInfo)].copyNumber,
+            importedFile.copyNumber,
           );
-          copiesCount = copiesCount + 1;
-          this.emit('STORE_DEAL_MADE', {
-            cid: deal.cid,
-            miner: deal.miner,
-            fileName: pathInfo.fileName,
-          });
+          break;
         } catch (err) {
           Logger.error(err);
         }
       }
+
     }
   }
 
@@ -133,10 +125,10 @@ class StarlingCore extends EventEmitter {
       }
 
       this.emit('STORE_IMPORT_STARTED');
-      const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName);
+      const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
 
       this.emit('STORE_DEALS_STARTED');
-      await this.makeDeals(pathInfosForImport, importedFiles, miners, noOfCopies, db, basePrice);
+      await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
 
       this.emit('STORE_DONE');
       close(db);
@@ -218,6 +210,7 @@ class StarlingCore extends EventEmitter {
     await insertFile(db, validUuid, JSON.stringify(cid), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
 
     return {
+      ...pathInfo,
       cid,
       copyNumber,
     };
@@ -343,6 +336,7 @@ class StarlingCore extends EventEmitter {
               this.emit('DOWNLOAD_FAIL_PIECE', NAME);
             }
             Logger.info(`failed to download ${NAME}`);
+            Logger.info(JSON.stringify(err));
             return;
           }
 
@@ -506,67 +500,58 @@ class StarlingCore extends EventEmitter {
       const db = await connect();
       const client = LotusWsClient.shared();
       const files = await getCompleteFileList(db);
-      const mapByUuid = files.reduce((acc, file) => {
-        const accByUuid = acc[file.UUID] || {};
-        return {
-          ...acc,
-          [file.UUID]: {
-            ...accByUuid,
-            [file.CID]: [...(accByUuid[file.CID] || []), file.STATUS],
-          }}
-      }, {});
-      const filteredMapByUuid = Object.keys(mapByUuid).reduce((acc, uuid) => {
-        const cids = Object.keys(mapByUuid[uuid]);
-        const result = cids.reduce((acc, cid) => {
-          const valid = mapByUuid[uuid][cid].filter(status => status === 'DEAL_ACTIVE').length === mapByUuid[uuid][cid].length;
-          return valid ? mapByUuid[uuid] : null;
-        }, {})
+      let map = {};
 
-        return !result ? acc : {
-          ...acc,
-          [uuid]: result
-        };
-      }, {});
+      for (const file of files) {
+        const uuid = file['UUID'];
+        const mapByUuid = map[uuid] || {};
+        const mapByUuidAndCopyNumber = mapByUuid[file.COPY_NUMBER] || [];
+        const dealInfo = await client.clientGetDealInfo(JSON.parse(file.DEAL_ID)).catch(() => null);
 
-      const results = {};
-
-      for (let uuid of Object.keys(filteredMapByUuid)) {
-        const cids = Object.keys(filteredMapByUuid[uuid]);
-
-        let cidResults = [];
-        for (let cid of cids) {
-          const findResult = await client.clientFindData(JSON.parse(cid));
-
-          if (findResult.length === 0) {
-            cidResults.push(false);
-          } else if (!findResult[0]['Size']) {
-            cidResults.push(false)
-          } else {
-            cidResults.push(true)
+        if (!dealInfo) {
+          map = {
+            ...map,
+            [uuid]: {
+              ...mapByUuid,
+              [file.COPY_NUMBER]: [...mapByUuidAndCopyNumber, { slashed: true }]
+            }
           }
-        }
-
-        if (cidResults.filter(cidResult => !!cidResult).length === cids.length) {
-          results[uuid] = 'passed';
         } else {
-          results[uuid] = 'failed';
+          if (dealInfo['State'] !== 6) {
+            break;
+          }
+
+          const dealID = dealInfo['DealID'];
+          const stateDealInfo = await client.stateMarketStorageDeal(dealID);
+          const slashed = stateDealInfo['State']['SlashEpoch'] !== -1;
+          map = {
+            ...map,
+            [uuid]: {
+              ...mapByUuid,
+              [file.COPY_NUMBER]: [...mapByUuidAndCopyNumber, { slashed }]
+            }
+          }
         }
       }
 
-      const data = Object.keys(results).map(uuid => {
+      const data = Object.keys(map).map((uuid) => {
         const filterFiles = files.filter(file => file.UUID === uuid);
         const name = filterFiles[0].ORIGINAL_NAME;
         const date = filterFiles[0].DATETIME_STARTED;
+        const copiesMap = map[uuid];
+        const valid = Object.keys(copiesMap).reduce((acc, copyNumber) => {
+          return acc ? acc : !copiesMap[copyNumber].reduce((acc, slashObject) => acc ? acc : slashObject.slashed, false);
+        }, false);
 
         return {
           uuid,
           name,
-          fixityCheck: results[uuid],
+          fixityCheck: valid ? 'passed' : 'failed',
           date,
         }
       });
-      close(db);
 
+      close(db);
       return data;
     } catch (error) {
       this.emit('ERROR', error);

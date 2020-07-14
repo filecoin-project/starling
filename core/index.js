@@ -501,6 +501,7 @@ class StarlingCore extends EventEmitter {
       const client = LotusWsClient.shared();
       const files = await getCompleteFileList(db);
       let map = {};
+      let skippedUuids = [];
 
       for (const file of files) {
         const uuid = file['UUID'];
@@ -518,7 +519,8 @@ class StarlingCore extends EventEmitter {
           }
         } else {
           if (dealInfo['State'] !== 6) {
-            break;
+            skippedUuids.push(uuid);
+            continue;
           }
 
           const dealID = dealInfo['DealID'];
@@ -534,22 +536,24 @@ class StarlingCore extends EventEmitter {
         }
       }
 
-      const data = Object.keys(map).map((uuid) => {
-        const filterFiles = files.filter(file => file.UUID === uuid);
-        const name = filterFiles[0].ORIGINAL_NAME;
-        const date = filterFiles[0].DATETIME_STARTED;
-        const copiesMap = map[uuid];
-        const valid = Object.keys(copiesMap).reduce((acc, copyNumber) => {
-          return acc ? acc : !copiesMap[copyNumber].reduce((acc, slashObject) => acc ? acc : slashObject.slashed, false);
-        }, false);
+      const data = Object.keys(map)
+        .filter(uuid => !skippedUuids.includes(uuid))
+        .map((uuid) => {
+          const filterFiles = files.filter(file => file.UUID === uuid);
+          const name = filterFiles[0].ORIGINAL_NAME;
+          const date = filterFiles[0].DATETIME_STARTED;
+          const copiesMap = map[uuid];
+          const valid = Object.keys(copiesMap).reduce((acc, copyNumber) => {
+            return acc ? acc : !copiesMap[copyNumber].reduce((acc, slashObject) => acc ? acc : slashObject.slashed, false);
+          }, false);
 
-        return {
-          uuid,
-          name,
-          fixityCheck: valid ? 'passed' : 'failed',
-          date,
-        }
-      });
+          return {
+            uuid,
+            name,
+            fixityCheck: valid ? 'passed' : 'failed',
+            date,
+          }
+        });
 
       close(db);
       return data;

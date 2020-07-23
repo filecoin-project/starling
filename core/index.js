@@ -148,6 +148,12 @@ class StarlingCore extends EventEmitter {
   ) {
     const client = LotusWsClient.shared();
     const price = Math.ceil((basePrice * size) / (1024 * 1024 * 1024));
+    Logger.info('start deal');
+    Logger.info({
+      cid,
+      miner,
+      price
+    });
     const dealCid = await client.clientStartDeal(
       cid,
       miner,
@@ -155,6 +161,10 @@ class StarlingCore extends EventEmitter {
       80640
     );
     const storageDealProposal = await client.clientGetDealInfo(dealCid);
+    Logger.info('deal info');
+    Logger.info({
+      storageDealProposal,
+    });
     const deal = {
       dealID: JSON.stringify(dealCid),
       minerID: miner,

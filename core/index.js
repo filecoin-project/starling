@@ -22,7 +22,7 @@ async function getPathInfo(pathName) {
         status: 'file',
         fileName,
         fileSize,
-        pathName,
+        pathName: path.resolve(pathName),
       };
     } else if (stats.isDirectory()) {
       return {

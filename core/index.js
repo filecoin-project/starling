@@ -88,7 +88,7 @@ class StarlingCore extends EventEmitter {
           break;
         } catch (err) {
           Logger.error(err);
-          throw(err);
+          throw new Error('Storage deal failed');
         }
       }
 

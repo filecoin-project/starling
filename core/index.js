@@ -108,6 +108,7 @@ class StarlingCore extends EventEmitter {
 
       if (miners.length === 0) {
         this.emit('ERROR', "No miners found!");
+        return;
       }
       const sectorSize = (miners[0].maxPieceSize + miners[0].minPieceSize) / 2;
 

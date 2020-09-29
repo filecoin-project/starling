@@ -227,7 +227,7 @@ class StarlingCore extends EventEmitter {
 
     return {
       ...pathInfo,
-      cid,
+      cid: cid.Root,
       copyNumber,
     };
   }

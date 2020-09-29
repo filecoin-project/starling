@@ -105,6 +105,10 @@ class StarlingCore extends EventEmitter {
       await waitTimeout(1);
       this.emit('STORE_FIND_MINERS_STARTED');
       const miners = await this.getMinersAsks();
+
+      if (miners.length === 0) {
+        this.emit('ERROR', "No miners found!");
+      }
       const sectorSize = (miners[0].maxPieceSize + miners[0].minPieceSize) / 2;
 
       pathInfo = await getPathInfo(pathName);

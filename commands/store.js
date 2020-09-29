@@ -68,6 +68,7 @@ async function store() {
       progressBar.tick(10, {
         state: message,
       });
+      process.exit(0);
     });
 
     core.on('STORE_FIND_MINERS_STARTED', () => {

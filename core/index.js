@@ -167,7 +167,6 @@ class StarlingCore extends EventEmitter {
       80640
     );
     const storageDealProposal = await client.clientGetDealInfo(dealCid);
-    Logger.info('deal info');
     Logger.info({
       storageDealProposal,
     });

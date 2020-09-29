@@ -266,7 +266,13 @@ async function monitor(rate) {
       }
     }, 5000); // get the status of the deals every 5 seconds
   } catch (err) {
-    Logger.error(err);
+    if (!err) {
+      console.log(`\n🚫 Error occured`);
+    } else if (err.message) {
+      console.log(`\n🚫 Error: ${err.message}`);
+    } else {
+      console.log(`\n🚫 Error: ${err}`);
+    }
     process.exit(0);
   }
 }

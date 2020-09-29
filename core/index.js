@@ -88,6 +88,7 @@ class StarlingCore extends EventEmitter {
           break;
         } catch (err) {
           Logger.error(err);
+          throw(err);
         }
       }
 

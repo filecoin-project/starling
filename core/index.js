@@ -222,7 +222,7 @@ class StarlingCore extends EventEmitter {
       validUuid = existingFiles[0].UUID;
     }
 
-    await insertFile(db, validUuid, JSON.stringify(cid), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
+    await insertFile(db, validUuid, JSON.stringify(cid.Root), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
 
     return {
       ...pathInfo,

@@ -209,7 +209,7 @@ class StarlingCore extends EventEmitter {
     const cid = await client.clientImport(pathInfo.pathName, false);
     const formattedSize = formatBytes(pathInfo.fileSize);
 
-    const existingFiles = await getFilesByCid(db, JSON.stringify(cid));
+    const existingFiles = await getFilesByCid(db, JSON.stringify(cid.Root));
     let copyNumber;
     let validUuid = uuid;
 

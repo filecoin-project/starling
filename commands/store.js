@@ -59,11 +59,11 @@ async function store() {
       Logger.info(error);
       let message = '';
       if (!error) {
-        message = '\t🚫 Error occured';
+        message = '\t🚫 Error occured\n';
       } else if (error.message) {
-        message = `\t🚫 Error: ${error.message}`;
+        message = `\t🚫 Error: ${error.message}\n`;
       } else {
-        message = `\t🚫 Error: ${error}`;
+        message = `\t🚫 Error: ${error}\n`;
       }
       progressBar.tick(10, {
         state: message,

@@ -106,6 +106,7 @@ class StarlingCore extends EventEmitter {
       await waitTimeout(1);
       this.emit('STORE_FIND_MINERS_STARTED');
       const miners = await this.getMinersAsks();
+      Logger.info(`[${pathInfo.pathName}]: ${miners.length} miners`);
 
       if (miners.length === 0) {
         this.emit('ERROR', "No miners found!");
@@ -258,7 +259,7 @@ class StarlingCore extends EventEmitter {
       minPieceSize: storageAsk.Ask.MinPieceSize,
       maxPieceSize: storageAsk.Ask.MaxPieceSize,
     }));
-    Logger.info('asks', formattedStorageAsks);
+    Logger.info(`[asks] ${formattedStorageAsks}`);
     return formattedStorageAsks;
   }
 

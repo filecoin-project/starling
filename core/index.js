@@ -76,7 +76,9 @@ class StarlingCore extends EventEmitter {
     let i = 0;
 
     while (i < miners.length && i < noOfCopies) {
-      const filteredFiles = importedFiles.filter((file, idx) => idx % i === 0);
+      const filteredFiles = importedFiles.filter((file, idx) => {
+        return idx >= i * noOfCopies && idx <= i * noOfCopies + noOfCopies - 1;
+      });
       for (let importedFile of filteredFiles) {
         try {
           await this.proposeDeal(

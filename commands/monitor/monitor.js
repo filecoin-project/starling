@@ -88,13 +88,13 @@ function getTableData(jobs) {
   ];
 }
 
-function getRightHeaderData(activeJobs, jobs) {
+function getRightHeaderData(jobs, processingJobs) {
   const rightHeader = [
     '',
-    `Active deals: ${chalk.hex('#00E900')(activeJobs.length)}`,
-    `Processing deals: ${chalk.hex('#00E900')(jobs.length - activeJobs.length)}`,
+    `Active deals: ${chalk.hex('#00E900')(jobs.length - processingJobs.length)}`,
+    `Processing deals: ${chalk.hex('#00E900')(processingJobs.length)}`,
     ``,
-    `${progress({ active: activeJobs.length, queued: jobs - activeJobs })}`
+    `${progress({ active: jobs.length - processingJobs.length, queued: processingJobs.length })}`
   ];
 
   return rightHeader;

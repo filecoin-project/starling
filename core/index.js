@@ -445,7 +445,7 @@ class StarlingCore extends EventEmitter {
         const status = this.getReportStatus(files);
 
         const size = files.reduce((acc, file) => file.COPY_NUMBER === 1 ? acc + file.SIZE_BYTES : acc, 0);
-        const encryption = files[0].ENCRYPTED ? 'enabled' : 'disabled';
+        const encryption = files[0].ENCRYPTED === 'true' ? 'enabled' : 'disabled';
         const date = files[0].DATETIME_STARTED;
         const totalCopies = files.reduce((acc, file) => file.COPY_NUMBER > acc ? file.COPY_NUMBER : acc, 0);
         return {
@@ -488,7 +488,7 @@ class StarlingCore extends EventEmitter {
         const name = files[0].ORIGINAL_NAME;
         const status = this.getReportStatus(files);
         const size = files.reduce((acc, file) => file.COPY_NUMBER === 1 ? acc + file.SIZE_BYTES : acc, 0);
-        const encryption = files[0].ENCRYPTED ? 'enabled' : 'disabled';
+        const encryption = files[0].ENCRYPTED === 'true' ? 'enabled' : 'disabled';
         const date = files[0].DATETIME_STARTED;
         const totalCopies = files.reduce((acc, file) => file.COPY_NUMBER > acc ? file.COPY_NUMBER : acc, 0);
 

@@ -74,10 +74,11 @@ class StarlingCore extends EventEmitter {
 
   async makeDeals(importedFiles, miners, noOfCopies, db, basePrice) {
     let i = 0;
+    const noOfSplits = importedFiles.length / noOfCopies;
 
     while (i < miners.length && i < noOfCopies) {
       const filteredFiles = importedFiles.filter((file, idx) => {
-        const valid = idx >= i * noOfCopies && idx <= i * noOfCopies + noOfCopies - 1;
+        const valid = idx >= i * noOfCopies && idx <= i * noOfCopies + noOfSplits - 1;
         console.log(valid);
       });
       for (let importedFile of filteredFiles) {
@@ -167,7 +168,7 @@ class StarlingCore extends EventEmitter {
       cid,
       miner,
       price + (copyIdx - 1),
-      80640
+      806400
     );
     const storageDealProposal = await client.clientGetDealInfo(dealCid);
     const deal = {

@@ -77,7 +77,8 @@ class StarlingCore extends EventEmitter {
 
     while (i < miners.length && i < noOfCopies) {
       const filteredFiles = importedFiles.filter((file, idx) => {
-        return idx >= i * noOfCopies && idx <= i * noOfCopies + noOfCopies - 1;
+        const valid = idx >= i * noOfCopies && idx <= i * noOfCopies + noOfCopies - 1;
+        console.log(valid);
       });
       for (let importedFile of filteredFiles) {
         try {

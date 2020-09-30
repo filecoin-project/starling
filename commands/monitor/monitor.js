@@ -88,14 +88,13 @@ function getTableData(jobs) {
   ];
 }
 
-function getRightHeaderData(jobs) {
-  const jobsCount = jobs.length || 0;
+function getRightHeaderData(jobs, activeJobs) {
   const rightHeader = [
     '',
-    `Active jobs: ${chalk.hex('#00E900')(jobsCount)}`,
-    `Queued jobs: ${chalk.hex('#00E900')(0)}`,
+    `Active deals: ${chalk.hex('#00E900')(activeJobs.length)}`,
+    `Processing deals: ${chalk.hex('#00E900')(0)}`,
     ``,
-    `${progress({ active: jobsCount, queued: 0 })}`
+    `${progress({ active: activeJobs.length, queued: jobs - activeJobs })}`
   ];
 
   return rightHeader;
@@ -148,7 +147,7 @@ async function monitor(rate) {
     const { miners, jobs, wallet } = await core.getReport();
     const filteredJobs = jobs.filter(job => job.status !== 'STORED');
 
-    const headerRight = getHeaderRight(getRightHeaderData(filteredJobs));
+    const headerRight = getHeaderRight(getRightHeaderData(jobs, filteredJobs));
     const headerLeft = getHeaderLeft(getLeftHeaderData(jobs, miners, wallet));
     const table = getTable(getTableData(filteredJobs));
     const footer = getFooter(footerData);

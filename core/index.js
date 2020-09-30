@@ -73,25 +73,26 @@ class StarlingCore extends EventEmitter {
   }
 
   async makeDeals(importedFiles, miners, noOfCopies, db, basePrice) {
-    for (let importedFile of importedFiles) {
-      for (let miner of miners) {
+    let i = 0;
+
+    while (i < miners.length && i < noOfCopies) {
+      for (let importedFile of importedFiles) {
         try {
           await this.proposeDeal(
             db,
             importedFile.cid,
             importedFile.fileName,
             importedFile.fileSize,
-            miner.miner,
+            miners[i].miner,
             basePrice,
             importedFile.copyNumber,
           );
-          break;
         } catch (err) {
           Logger.error(err);
           throw new Error('Storage deal failed');
         }
       }
-
+      i++;
     }
   }
 

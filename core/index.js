@@ -129,11 +129,12 @@ class StarlingCore extends EventEmitter {
       if (sectorSize < pathInfo.fileSize) {
         this.emit('STORE_FILE_SPLIT_STARTED');
         pathInfosForImport = await this.splitFiles(pathInfo.pathName, sectorSize);
+        Logger.info(`[split] sector size`)
       }
 
       this.emit('STORE_IMPORT_STARTED');
       const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
-      Logger.info(`[imported]: ${importedFiles.map(imported => ([ imported.cid, imported.pathName ]))}`);
+      Logger.info(`[imported]: ${importedFiles.map(imported => ([ imported.cid['/'], imported.pathName ]))}`);
 
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
@@ -156,12 +157,7 @@ class StarlingCore extends EventEmitter {
   ) {
     const client = LotusWsClient.shared();
     const price = Math.ceil((basePrice * size) / (1024 * 1024 * 1024));
-    Logger.info('start deal');
-    Logger.info({
-      cid,
-      miner,
-      price
-    });
+    Logger.info(`[deal start]: cid: ${cid['/']}, miner: ${miner}, copy: ${copyIdx}`);
     const dealCid = await client.clientStartDeal(
       cid,
       miner,
@@ -169,9 +165,6 @@ class StarlingCore extends EventEmitter {
       80640
     );
     const storageDealProposal = await client.clientGetDealInfo(dealCid);
-    Logger.info({
-      storageDealProposal,
-    });
     const deal = {
       dealID: JSON.stringify(dealCid),
       minerID: miner,

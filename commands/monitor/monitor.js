@@ -248,7 +248,7 @@ async function monitor(rate) {
       if (!monitoringPaused) {
         const { miners, jobs, wallet } = await core.getReport();
         const filteredJobs = jobs.filter(job => job.status !== 'STORED');
-        headerRight.setItems(getRightHeaderData(filteredJobs));
+        headerRight.setItems(getRightHeaderData(jobs, filteredJobs));
         headerLeft.setItems(getLeftHeaderData(jobs, miners, wallet));
         table.setData(getTableData(filteredJobs));
         table.select(index);

@@ -88,11 +88,11 @@ function getTableData(jobs) {
   ];
 }
 
-function getRightHeaderData(jobs, activeJobs) {
+function getRightHeaderData(activeJobs, jobs) {
   const rightHeader = [
     '',
     `Active deals: ${chalk.hex('#00E900')(activeJobs.length)}`,
-    `Processing deals: ${chalk.hex('#00E900')(0)}`,
+    `Processing deals: ${chalk.hex('#00E900')(jobs.length - activeJobs.length)}`,
     ``,
     `${progress({ active: activeJobs.length, queued: jobs - activeJobs })}`
   ];

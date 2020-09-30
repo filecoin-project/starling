@@ -133,6 +133,7 @@ class StarlingCore extends EventEmitter {
 
       this.emit('STORE_IMPORT_STARTED');
       const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
+      Logger.info(`[imported]: ${importedFiles.map(imported => ([ imported.cid, imported.pathName ]))}`);
 
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
@@ -259,7 +260,8 @@ class StarlingCore extends EventEmitter {
       minPieceSize: storageAsk.Ask.MinPieceSize,
       maxPieceSize: storageAsk.Ask.MaxPieceSize,
     }));
-    Logger.info(`[asks] ${formattedStorageAsks}`);
+    Logger.info(`[asks] ${JSON.stringify(formattedStorageAsks)}`);
+
     return formattedStorageAsks;
   }
 

@@ -13,7 +13,6 @@ async function insertFile(db, uuid, CID, name, fileSize, formattedSize, index, i
           reject(err);
         } else {
           resolve();
-          Logger.info(`file details successfully added for ${name}`);
         }
       }
     );
@@ -32,7 +31,6 @@ async function updateFile(db, name, { CID, dealID, minerID }, index) {
           Logger.error(err.stack);
         } else {
           resolve();
-          Logger.info(`file details successfully updated for ${name}`);
         }
       }
     );
@@ -302,7 +300,6 @@ async function updateFileStatus(
         Logger.error(err);
       } else {
         resolve();
-        Logger.info(`file details successfully updated for ${cid}`);
       }
     });
   });

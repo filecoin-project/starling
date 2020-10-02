@@ -22,7 +22,7 @@ async function getPathInfo(pathName) {
         status: 'file',
         fileName,
         fileSize,
-        pathName,
+        pathName: path.resolve(pathName),
       };
     } else if (stats.isDirectory()) {
       return {
@@ -73,24 +73,30 @@ class StarlingCore extends EventEmitter {
   }
 
   async makeDeals(importedFiles, miners, noOfCopies, db, basePrice) {
-    for (let importedFile of importedFiles) {
-      for (let miner of miners) {
+    let i = 0;
+    const noOfSplits = importedFiles.length / noOfCopies;
+
+    while (i < miners.length && i < noOfCopies) {
+      const filteredFiles = importedFiles.filter((file, idx) => {
+        return idx >= i * noOfSplits && idx <= i * noOfSplits + noOfSplits - 1;
+      });
+      for (let importedFile of filteredFiles) {
         try {
           await this.proposeDeal(
             db,
             importedFile.cid,
             importedFile.fileName,
             importedFile.fileSize,
-            miner.miner,
+            miners[i].miner,
             basePrice,
             importedFile.copyNumber,
           );
-          break;
         } catch (err) {
           Logger.error(err);
+          throw new Error('Storage deal failed');
         }
       }
-
+      i++;
     }
   }
 
@@ -105,6 +111,12 @@ class StarlingCore extends EventEmitter {
       await waitTimeout(1);
       this.emit('STORE_FIND_MINERS_STARTED');
       const miners = await this.getMinersAsks();
+      Logger.info(`[${pathInfo.pathName}]: ${miners.length} miners`);
+
+      if (miners.length === 0) {
+        this.emit('ERROR', "No miners found!");
+        return;
+      }
       const sectorSize = (miners[0].maxPieceSize + miners[0].minPieceSize) / 2;
 
       pathInfo = await getPathInfo(pathName);
@@ -122,10 +134,12 @@ class StarlingCore extends EventEmitter {
       if (sectorSize < pathInfo.fileSize) {
         this.emit('STORE_FILE_SPLIT_STARTED');
         pathInfosForImport = await this.splitFiles(pathInfo.pathName, sectorSize);
+        Logger.info(`[split] sector size`)
       }
 
       this.emit('STORE_IMPORT_STARTED');
       const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
+      Logger.info(`[imported]: ${importedFiles.map(imported => ([ imported.cid['/'], imported.pathName ]))}`);
 
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
@@ -148,23 +162,14 @@ class StarlingCore extends EventEmitter {
   ) {
     const client = LotusWsClient.shared();
     const price = Math.ceil((basePrice * size) / (1024 * 1024 * 1024));
-    Logger.info('start deal');
-    Logger.info({
-      cid,
-      miner,
-      price
-    });
+    Logger.info(`[deal start]: cid: ${cid['/']}, miner: ${miner}, copy: ${copyIdx}`);
     const dealCid = await client.clientStartDeal(
       cid,
       miner,
       price + (copyIdx - 1),
-      80640
+      806400
     );
     const storageDealProposal = await client.clientGetDealInfo(dealCid);
-    Logger.info('deal info');
-    Logger.info({
-      storageDealProposal,
-    });
     const deal = {
       dealID: JSON.stringify(dealCid),
       minerID: miner,
@@ -204,7 +209,7 @@ class StarlingCore extends EventEmitter {
     const cid = await client.clientImport(pathInfo.pathName, false);
     const formattedSize = formatBytes(pathInfo.fileSize);
 
-    const existingFiles = await getFilesByCid(db, JSON.stringify(cid));
+    const existingFiles = await getFilesByCid(db, JSON.stringify(cid.Root));
     let copyNumber;
     let validUuid = uuid;
 
@@ -217,11 +222,11 @@ class StarlingCore extends EventEmitter {
       validUuid = existingFiles[0].UUID;
     }
 
-    await insertFile(db, validUuid, JSON.stringify(cid), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
+    await insertFile(db, validUuid, JSON.stringify(cid.Root), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
 
     return {
       ...pathInfo,
-      cid,
+      cid: cid.Root,
       copyNumber,
     };
   }
@@ -253,7 +258,8 @@ class StarlingCore extends EventEmitter {
       minPieceSize: storageAsk.Ask.MinPieceSize,
       maxPieceSize: storageAsk.Ask.MaxPieceSize,
     }));
-    Logger.info('asks', formattedStorageAsks);
+    Logger.info(`[asks] ${JSON.stringify(formattedStorageAsks)}`);
+
     return formattedStorageAsks;
   }
 
@@ -439,7 +445,7 @@ class StarlingCore extends EventEmitter {
         const status = this.getReportStatus(files);
 
         const size = files.reduce((acc, file) => file.COPY_NUMBER === 1 ? acc + file.SIZE_BYTES : acc, 0);
-        const encryption = files[0].ENCRYPTED ? 'enabled' : 'disabled';
+        const encryption = files[0].ENCRYPTED === 'true' ? 'enabled' : 'disabled';
         const date = files[0].DATETIME_STARTED;
         const totalCopies = files.reduce((acc, file) => file.COPY_NUMBER > acc ? file.COPY_NUMBER : acc, 0);
         return {
@@ -482,7 +488,7 @@ class StarlingCore extends EventEmitter {
         const name = files[0].ORIGINAL_NAME;
         const status = this.getReportStatus(files);
         const size = files.reduce((acc, file) => file.COPY_NUMBER === 1 ? acc + file.SIZE_BYTES : acc, 0);
-        const encryption = files[0].ENCRYPTED ? 'enabled' : 'disabled';
+        const encryption = files[0].ENCRYPTED === 'true' ? 'enabled' : 'disabled';
         const date = files[0].DATETIME_STARTED;
         const totalCopies = files.reduce((acc, file) => file.COPY_NUMBER > acc ? file.COPY_NUMBER : acc, 0);
 

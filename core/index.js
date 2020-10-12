@@ -396,7 +396,7 @@ class StarlingCore extends EventEmitter {
       });
       close(db);
     } catch (err) {
-      console.log(err);
+      this.emit('ERROR', err);
       Logger.error(err.stack);
     }
   }

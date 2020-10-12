@@ -293,7 +293,7 @@ class StarlingCore extends EventEmitter {
           isEncrypted = (ENCRYPTED === 'true');
 
           const status = storageDealProposal.State;
-          if (status != 6 ) {
+          if (status != 7 ) {
             allFilesDownloaded = false;
             this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
             return;

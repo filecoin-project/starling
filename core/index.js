@@ -301,6 +301,7 @@ class StarlingCore extends EventEmitter {
         }
 
         const clientId = marketStorageDeal.Proposal.Client;
+        const pieceCid = marketStorageDeal.Proposal.PieceCID;
 
         files.push(NAME);
 
@@ -309,7 +310,7 @@ class StarlingCore extends EventEmitter {
         }
         Logger.info(`started downloading ${NAME}`);
 
-        const allOffers = await client.clientFindData(JSON.parse(CID));
+        const allOffers = await client.clientFindData(pieceCid, JSON.parse(CID)).catch(e => {console.log(e)});
         if (allOffers.length === 0) {
           this.emit('ERROR_PIECE', `Couldn't find any retrieval offers for ${NAME}`);
           Logger.info(`failed to download ${NAME}`);
@@ -336,13 +337,17 @@ class StarlingCore extends EventEmitter {
 
         const retrievalOrder = {
           Root: offer[0].Root,
+          Piece: offer[0].Piece,
+          UnsealPrice: offer[0].UnsealPrice,
           Size: offer[0].Size,
           Total: offer[0].MinPrice,
+
           PaymentInterval: offer[0].PaymentInterval,
           PaymentIntervalIncrease: offer[0].PaymentIntervalIncrease,
+
           Client: clientId,
           Miner: offer[0].Miner,
-          MinerPeerID: offer[0].MinerPeerID,
+          MinerPeer: offer[0].MinerPeer,
         }
         const err = await client.clientRetrieve(retrievalOrder, `${path}/downloaded.${NAME}`).catch(err => this.emit('ERROR', err) );
         if (err) {

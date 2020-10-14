@@ -9,6 +9,7 @@ const { formatBytes, waitTimeout } = require('./application/resource/utils');
 const { encrypt, decrypt } = require('./application/resource/aes');
 const { Logger } = require('./infrastructure/log');
 const { shuffleArray } = require('../core/application/resource/shuffle');
+const { readConfig } = require('../utils/configFunctions');
 const { updateFile, insertFile, connect, close, getFilesByCid, getStoredFileList, getRetrievalFileInfo, getCompleteFileList } = require('./infrastructure/db');
 
 async function getPathInfo(pathName) {

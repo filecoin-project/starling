@@ -240,6 +240,7 @@ class StarlingCore extends EventEmitter {
   }
 
   async getMinersAsks() {
+    const config = await readConfig();
     const client = LotusWsClient.shared();
     let miners = await client.listMiners();
     miners = shuffleArray(miners);
@@ -252,7 +253,9 @@ class StarlingCore extends EventEmitter {
         return null;
       }
     }));
-    const formattedStorageAsks = storageAsks.filter(storageAsk => !!storageAsk).map(storageAsk => ({
+    const formattedStorageAsks = storageAsks.filter(storageAsk => {
+      return !!storageAsk && (parseInt(storageAsk.Price) <= parseInt(config.price));
+    }).map(storageAsk => ({
       miner: storageAsk.Miner,
       askPrice: storageAsk.Price,
       minPieceSize: storageAsk.MinPieceSize,

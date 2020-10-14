@@ -201,23 +201,24 @@ function getStorageSpace(db) {
   });
 }
 
-function getRetrievalFileInfo(db, uuid, copyNumber, callback) {
+function getRetrievalFileInfo(db, uuid, copyNumber) {
   let info = [];
 
-  db.each(
-    `SELECT CID,NAME,DEAL_ID,ENCRYPTED,MINER_ID,ORIGINAL_NAME FROM CONTENT WHERE UUID='${uuid}' AND COPY_NUMBER=${copyNumber}`,
-    (err, row) => {
-      if (err) {
-        Logger.error('db error');
-        Logger.error(err.stack);
-      } else {
-        info.push(row);
+  return new Promise((resolve, reject) => {
+    db.each(
+      `SELECT CID,NAME,DEAL_ID,ENCRYPTED,MINER_ID,ORIGINAL_NAME FROM CONTENT WHERE UUID='${uuid}' AND COPY_NUMBER=${copyNumber}`,
+      (err, row) => {
+        if (err) {
+          Logger.error(err.stack);
+        } else {
+          info.push(row);
+        }
+      },
+      function() {
+        resolve(info);
       }
-    },
-    function() {
-      callback(info);
-    }
-  );
+    );
+  });
 }
 
 function getFilteredTableContent(db, param, callback) {

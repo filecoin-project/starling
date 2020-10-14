@@ -274,129 +274,135 @@ class StarlingCore extends EventEmitter {
         anyCopy = true;
       }
 
-      await getRetrievalFileInfo(db, uuid, copyNumber, async data => {
-        const numberOfFiles = data.length;
-        let allFilesDownloaded = true;
-        let files = [];
-        let isEncrypted = false;
+      const data = await getRetrievalFileInfo(db, uuid, copyNumber);
+      const numberOfFiles = data.length;
+      let allFilesDownloaded = true;
+      let files = [];
+      let isEncrypted = false;
 
-        if (numberOfFiles == 0) {
-          this.emit('ERROR', `No files found for uuid: ${uuid}, copy number: ${copyNumber}`);
+      if (numberOfFiles == 0) {
+        this.emit('ERROR', `No files found for uuid: ${uuid}, copy number: ${copyNumber}`);
+        return;
+      }
+
+      this.emit('DOWNLOAD_START', {fileName: data[0].ORIGINAL_NAME, numberOfPieces: numberOfFiles});
+
+      await Promise.all( data.map(async (file) => {
+        const { CID, NAME, DEAL_ID, ENCRYPTED, MINER_ID } = file;
+        const storageDealProposal = await client.clientGetDealInfo(JSON.parse(DEAL_ID)).catch(err => this.emit('ERROR', err) );
+        const marketStorageDeal = await client.stateMarketStorageDeal(storageDealProposal.DealID).catch(err => this.emit('ERROR', err) );
+        isEncrypted = (ENCRYPTED === 'true');
+
+        const status = storageDealProposal.State;
+        if (status != 7 ) {
+          allFilesDownloaded = false;
+          this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
           return;
         }
 
-        this.emit('DOWNLOAD_START', {fileName: data[0].ORIGINAL_NAME, numberOfPieces: numberOfFiles});
-        await Promise.all( data.map(async (file) => {
-          const { CID, NAME, DEAL_ID, ENCRYPTED, MINER_ID } = file;
-          const storageDealProposal = await client.clientGetDealInfo(JSON.parse(DEAL_ID)).catch(err => this.emit('ERROR', err) );
-          const marketStorageDeal = await client.stateMarketStorageDeal(storageDealProposal.DealID).catch(err => this.emit('ERROR', err) );
-          isEncrypted = (ENCRYPTED === 'true');
+        const clientId = marketStorageDeal.Proposal.Client;
+        const pieceCid = marketStorageDeal.Proposal.PieceCID;
 
-          const status = storageDealProposal.State;
-          if (status != 7 ) {
-            allFilesDownloaded = false;
-            this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
-            return;
+        files.push(NAME);
+
+        if (numberOfFiles > 1) {
+          this.emit('DOWNLOAD_START_PIECE', NAME);
+        }
+        Logger.info(`started downloading ${NAME}`);
+
+        const allOffers = await client.clientFindData(pieceCid, JSON.parse(CID)).catch(e => {console.log(e)});
+        if (allOffers.length === 0) {
+          this.emit('ERROR_PIECE', `Couldn't find any retrieval offers for ${NAME}`);
+          Logger.info(`failed to download ${NAME}`);
+          return;
+        }
+
+        const offer = allOffers.filter( item => {
+          let isValid = false;
+          if (item.Size > 0) isValid = true;
+
+          if (!anyCopy) {
+            if (item.Miner === MINER_ID) isValid = true;
+            else isValid = false;
           }
 
-          const clientId = marketStorageDeal.Proposal.Client;
+          return isValid;
+        })
 
-          files.push(NAME);
+        if (offer.length === 0) {
+          this.emit('ERROR_PIECE', `Couldn't find any valid (size >0) retrieval offers for ${NAME}`);
+          Logger.info(`failed to download ${NAME}`);
+          return;
+        }
 
-          if (numberOfFiles > 1) {
-            this.emit('DOWNLOAD_START_PIECE', NAME);
-          }
-          Logger.info(`started downloading ${NAME}`);
+        const retrievalOrder = {
+          Root: offer[0].Root,
+          Piece: offer[0].Piece,
+          UnsealPrice: offer[0].UnsealPrice,
+          Size: offer[0].Size,
+          Total: offer[0].MinPrice,
 
-          const allOffers = await client.clientFindData(JSON.parse(CID));
-          if (allOffers.length === 0) {
-            this.emit('ERROR_PIECE', `Couldn't find any retrieval offers for ${NAME}`);
-            Logger.info(`failed to download ${NAME}`);
-            return;
-          }
+          PaymentInterval: offer[0].PaymentInterval,
+          PaymentIntervalIncrease: offer[0].PaymentIntervalIncrease,
 
-          const offer = allOffers.filter( item => {
-            let isValid = false;
-            if (item.Size > 0) isValid = true;
-
-            if (!anyCopy) {
-              if (item.Miner === MINER_ID) isValid = true;
-              else isValid = false;
-            }
-
-            return isValid;
-          })
-
-          if (offer.length === 0) {
-            this.emit('ERROR_PIECE', `Couldn't find any valid (size >0) retrieval offers for ${NAME}`);
-            Logger.info(`failed to download ${NAME}`);
-            return;
-          }
-
-          const retrievalOrder = {
-            Root: offer[0].Root,
-            Size: offer[0].Size,
-            Total: offer[0].MinPrice,
-            PaymentInterval: offer[0].PaymentInterval,
-            PaymentIntervalIncrease: offer[0].PaymentIntervalIncrease,
-            Client: clientId,
-            Miner: offer[0].Miner,
-            MinerPeerID: offer[0].MinerPeerID,
-          }
-          const err = await client.clientRetrieve(retrievalOrder, `${path}/downloaded.${NAME}`).catch(err => this.emit('ERROR', err) );
-          if (err) {
-            allFilesDownloaded = false;
-            if (numberOfFiles === 1) {
-              this.emit('DOWNLOAD_FAIL', NAME);
-            } else {
-              this.emit('DOWNLOAD_FAIL_PIECE', NAME);
-            }
-            Logger.info(`failed to download ${NAME}`);
-            Logger.info(JSON.stringify(err));
-            return;
-          }
-
-          if (numberOfFiles === 1 && isEncrypted) {
-            this.emit('DECRYPT_START', NAME);
-            await decrypt(`${path}/downloaded.${NAME}`,`${path}/decrypted.${NAME}`, encryptionKey);
-          }
-
+          Client: clientId,
+          Miner: offer[0].Miner,
+          MinerPeer: offer[0].MinerPeer,
+        }
+        const err = await client.clientRetrieve(retrievalOrder, `${path}/downloaded.${NAME}`).catch(err => this.emit('ERROR', err) );
+        if (err) {
+          allFilesDownloaded = false;
           if (numberOfFiles === 1) {
-            this.emit('DOWNLOAD_SUCCESS', NAME);
+            this.emit('DOWNLOAD_FAIL', NAME);
           } else {
-            this.emit('DOWNLOAD_SUCCESS_PIECE', NAME);
+            this.emit('DOWNLOAD_FAIL_PIECE', NAME);
           }
-
-          Logger.info(`completed downloading ${NAME}`);
-
+          Logger.info(`failed to download ${NAME}`);
+          Logger.info(JSON.stringify(err));
           return;
-        }));
-
-        const filesWithPaths = [];
-        files.forEach( f => filesWithPaths.push(`${path}/${f}`));
-
-        if (numberOfFiles > 1 && allFilesDownloaded) {
-          const fileName = data[0].ORIGINAL_NAME;
-          splitFile
-            .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
-            .then(async () => {
-              if (isEncrypted) {
-                this.emit('DECRYPT_START', fileName);
-                await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
-              }
-              this.emit('DOWNLOAD_SUCCESS', fileName);
-              Logger.info(`completed downloading ${fileName}`);
-
-            })
-            .catch(err => {
-              this.emit('DOWNLOAD_MERGE_ERROR', fileName);
-              Logger.error(err);
-            });
         }
-      });
+
+        if (numberOfFiles === 1 && isEncrypted) {
+          this.emit('DECRYPT_START', NAME);
+          await decrypt(`${path}/downloaded.${NAME}`,`${path}/decrypted.${NAME}`, encryptionKey);
+        }
+
+        if (numberOfFiles === 1) {
+          this.emit('DOWNLOAD_SUCCESS', NAME);
+        } else {
+          this.emit('DOWNLOAD_SUCCESS_PIECE', NAME);
+        }
+
+        Logger.info(`completed downloading ${NAME}`);
+
+        return;
+      }));
+
+      const filesWithPaths = [];
+      files.forEach( f => filesWithPaths.push(`${path}/${f}`));
+
+      if (numberOfFiles > 1 && allFilesDownloaded) {
+        const fileName = data[0].ORIGINAL_NAME;
+        splitFile
+          .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
+          .then(async () => {
+            if (isEncrypted) {
+              this.emit('DECRYPT_START', fileName);
+              await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
+            }
+            this.emit('DOWNLOAD_SUCCESS', fileName);
+            Logger.info(`completed downloading ${fileName}`);
+
+          })
+          .catch(err => {
+            this.emit('DOWNLOAD_MERGE_ERROR', fileName);
+            Logger.error(err);
+          });
+      }
+
       close(db);
     } catch (err) {
-      console.log(err);
+      this.emit('ERROR', err);
       Logger.error(err.stack);
     }
   }

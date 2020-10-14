@@ -253,10 +253,10 @@ class StarlingCore extends EventEmitter {
       }
     }));
     const formattedStorageAsks = storageAsks.filter(storageAsk => !!storageAsk).map(storageAsk => ({
-      miner: storageAsk.Ask.Miner,
-      askPrice: storageAsk.Ask.Price,
-      minPieceSize: storageAsk.Ask.MinPieceSize,
-      maxPieceSize: storageAsk.Ask.MaxPieceSize,
+      miner: storageAsk.Miner,
+      askPrice: storageAsk.Price,
+      minPieceSize: storageAsk.MinPieceSize,
+      maxPieceSize: storageAsk.MaxPieceSize,
     }));
     Logger.info(`[asks] ${JSON.stringify(formattedStorageAsks)}`);
 

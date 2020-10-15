@@ -46,7 +46,7 @@ async function get() {
     //check path and uu
     const uuid = parsedArgs[0];
     const resolvedPath = path.resolve('downloads');
-    const copyNumber = parsedArgs[2];
+    const copyNumber = parsedArgs[1];
     await checkConfig();
     const config = await readConfig();
     const core = new StarlingCore();
@@ -58,7 +58,7 @@ async function get() {
     console.log('\nSummary:');
     console.log('----------------------');
     console.log(`file id: ${chalk.yellow(uuid)}`);
-    console.log(`download path: ${chalk.yellow(resolvedPath + info.ORIGINAL_NAME)}`);
+    console.log(`download path: ${chalk.yellow(resolvedPath + '/' + info[0].ORIGINAL_NAME)}`);
     console.log(`encryption: ${chalk.yellow(encryptionKey ? 'enabled' : 'disabled')}`);
 
     const progressBar = new ProgressBar('[:bar] :percent :state', {

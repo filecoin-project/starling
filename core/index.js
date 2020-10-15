@@ -377,6 +377,14 @@ class StarlingCore extends EventEmitter {
           this.emit('DOWNLOAD_SUCCESS_PIECE', NAME);
         }
 
+        if (numberOfFiles === 1) {
+          if (isEncrypted) {
+            fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${NAME}`);
+          } else {
+            fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${NAME}`);
+          }
+        }
+
         Logger.info(`completed downloading ${NAME}`);
 
         return;
@@ -384,15 +392,22 @@ class StarlingCore extends EventEmitter {
 
       const filesWithPaths = [];
       files.forEach( f => filesWithPaths.push(`${path}/${f}`));
-
       if (numberOfFiles > 1 && allFilesDownloaded) {
         const fileName = data[0].ORIGINAL_NAME;
         splitFile
           .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
           .then(async () => {
+            filesWithPaths.forEach(path => fs.removeSync(path));
+
             if (isEncrypted) {
               this.emit('DECRYPT_START', fileName);
               await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
+            }
+
+            if (isEncrypted) {
+              fs.moveSync(`${path}/decrypted.${fileName}`, `${path}/${fileName}`);
+            } else {
+              fs.moveSync(`${path}/downloaded.${fileName}`, `${path}/${fileName}`);
             }
             this.emit('DOWNLOAD_SUCCESS', fileName);
             Logger.info(`completed downloading ${fileName}`);

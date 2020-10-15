@@ -1,5 +1,6 @@
 const splitFile = require('split-file');
 const chalk = require('chalk');
+const path = require('path');
 const figlet = require('figlet');
 const ProgressBar = require('progress');
 const { StarlingCore } = require('../core');
@@ -43,7 +44,7 @@ async function get() {
 
     //check path and uu
     const uuid = parsedArgs[0];
-    const path = parsedArgs[1];
+    const resolvedPath = path.resolve(parsedArgs[1]);
     const copyNumber = parsedArgs[2];
     await checkConfig();
     const config = await readConfig();
@@ -136,7 +137,7 @@ async function get() {
       console.log(`Failed to download, merge failed ${chalk.yellow(fileName)}`);
     });
 
-    await core.get(uuid, path, copyNumber, encryptionKey);
+    await core.get(uuid, resolvedPath, copyNumber, encryptionKey);
 
   } catch (err) {
     console.log(err);

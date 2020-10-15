@@ -4,6 +4,7 @@ const path = require('path');
 const figlet = require('figlet');
 const ProgressBar = require('progress');
 const { StarlingCore } = require('../core');
+const { connect, getRetrievalFileInfo } = require('../core/infrastructure/db');
 const { readConfig } = require('../utils');
 const { checkConfig } = require('../utils');
 
@@ -38,13 +39,13 @@ async function get() {
       }
     }
 
-    if (parsedArgs.length < 2) {
-      return Promise.reject('Please provide at least 2 arguments file uuid and path to store the file (within ipfs root). You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
+    if (parsedArgs.length < 1) {
+      return Promise.reject('Please provide the file UUID. You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
     }
 
     //check path and uu
     const uuid = parsedArgs[0];
-    const resolvedPath = path.resolve(parsedArgs[1]);
+    const resolvedPath = path.resolve('downloads');
     const copyNumber = parsedArgs[2];
     await checkConfig();
     const config = await readConfig();
@@ -52,10 +53,12 @@ async function get() {
     const encryptionKey = config.encryptionKey;
     let numberOfPieces = 1;
     let downloadedPieces = 0;
-
+    const db = await connect();
+    const info = await getRetrievalFileInfo(db, uuid, 1);
     console.log('\nSummary:');
     console.log('----------------------');
     console.log(`file id: ${chalk.yellow(uuid)}`);
+    console.log(`download path: ${chalk.yellow(resolvedPath + info.ORIGINAL_NAME)}`);
     console.log(`encryption: ${chalk.yellow(encryptionKey ? 'enabled' : 'disabled')}`);
 
     const progressBar = new ProgressBar('[:bar] :percent :state', {

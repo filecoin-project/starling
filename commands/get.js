@@ -8,6 +8,7 @@ const { StarlingCore } = require('../core');
 const { connect, getRetrievalFileInfo } = require('../core/infrastructure/db');
 const { readConfig } = require('../utils');
 const { checkConfig } = require('../utils');
+const { downloadsPath } = require('../constants/paths');
 
 async function get() {
   try {
@@ -33,8 +34,8 @@ async function get() {
 
     //check path and uu
     const uuid = parsedArgs[0];
-    fs.ensureDirSync('~/.starling/downloads');
-    const resolvedPath = path.resolve('~/.starling/downloads');
+    fs.ensureDirSync(downloadsPath);
+    const resolvedPath = path.resolve(downloadsPath);
     const copyNumber = parsedArgs[1];
     await checkConfig();
     const config = await readConfig();

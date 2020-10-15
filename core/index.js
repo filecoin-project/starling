@@ -381,10 +381,10 @@ class StarlingCore extends EventEmitter {
           const fileName = data[0].ORIGINAL_NAME;
           if (isEncrypted) {
             Logger.info(`move ${path}/decrypted.${NAME}\`, \`${path}/${fileName}`)
-            fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${fileName}`);
+            fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${fileName}`, { overwrite: true });
           } else {
             Logger.info(`move ${path}/downloaded.${NAME}\`, \`${path}/${fileName}`)
-            fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${fileName}`);
+            fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${fileName}`, { overwrite: true });
           }
         }
 
@@ -408,9 +408,9 @@ class StarlingCore extends EventEmitter {
             }
 
             if (isEncrypted) {
-              fs.moveSync(`${path}/decrypted.${fileName}`, `${path}/${fileName}`);
+              fs.moveSync(`${path}/decrypted.${fileName}`, `${path}/${fileName}`, { overwrite: true });
             } else {
-              fs.moveSync(`${path}/downloaded.${fileName}`, `${path}/${fileName}`);
+              fs.moveSync(`${path}/downloaded.${fileName}`, `${path}/${fileName}`, { overwrite: true });
             }
             this.emit('DOWNLOAD_SUCCESS', fileName);
             Logger.info(`completed downloading ${fileName}`);

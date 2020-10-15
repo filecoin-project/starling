@@ -34,7 +34,7 @@ async function get() {
     //check path and uu
     const uuid = parsedArgs[0];
     fs.ensureDirSync('~/.starling/downloads');
-    const resolvedPath = path.resolve('~/.starling/downloads');
+    const resolvedPath = path.resolve('downloads');
     const copyNumber = parsedArgs[1];
     await checkConfig();
     const config = await readConfig();

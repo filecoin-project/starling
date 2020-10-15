@@ -28,7 +28,7 @@ async function get() {
     }
 
     if (parsedArgs.length < 1) {
-      return Promise.reject('Please provide the file UUID. You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
+      return await Promise.reject('Please provide the file UUID. You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
     }
 
     //check path and uu

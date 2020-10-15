@@ -378,12 +378,13 @@ class StarlingCore extends EventEmitter {
         }
 
         if (numberOfFiles === 1) {
+          const fileName = data[0].ORIGINAL_NAME;
           if (isEncrypted) {
-            Logger.info(`move ${path}/decrypted.${NAME}\`, \`${path}/${NAME}`)
-            fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${NAME}`);
+            Logger.info(`move ${path}/decrypted.${NAME}\`, \`${path}/${fileName}`)
+            fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${fileName}`);
           } else {
-            Logger.info(`move ${path}/downloaded.${NAME}\`, \`${path}/${NAME}`)
-            fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${NAME}`);
+            Logger.info(`move ${path}/downloaded.${NAME}\`, \`${path}/${fileName}`)
+            fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${fileName}`);
           }
         }
 

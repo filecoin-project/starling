@@ -1,25 +1,13 @@
 const splitFile = require('split-file');
 const chalk = require('chalk');
 const path = require('path');
+const fs = require('fs-extra');
 const figlet = require('figlet');
 const ProgressBar = require('progress');
 const { StarlingCore } = require('../core');
 const { connect, getRetrievalFileInfo } = require('../core/infrastructure/db');
 const { readConfig } = require('../utils');
 const { checkConfig } = require('../utils');
-
-async function checkArgs() {
-  try {
-    const argLength = process.argv.length;
-
-    if (argLength < 5) {
-      return Promise.reject('Please provide at least 2 arguments file uuid and path to store the file (within ipfs root). You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
-    }
-    //check path and uuid
-  } catch (err) {
-    return Promise.reject('unexpected error');
-  }
-}
 
 async function get() {
   try {
@@ -45,7 +33,8 @@ async function get() {
 
     //check path and uu
     const uuid = parsedArgs[0];
-    const resolvedPath = path.resolve('downloads');
+    fs.ensureDirSync('~/.starling/downloads');
+    const resolvedPath = path.resolve('~/.starling/downloads');
     const copyNumber = parsedArgs[1];
     await checkConfig();
     const config = await readConfig();

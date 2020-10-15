@@ -298,11 +298,11 @@ class StarlingCore extends EventEmitter {
         isEncrypted = (ENCRYPTED === 'true');
 
         const status = storageDealProposal.State;
-        if (status != 7 ) {
-          allFilesDownloaded = false;
-          this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
-          return;
-        }
+        // if (status != 7 ) {
+        //   allFilesDownloaded = false;
+        //   this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
+        //   return;
+        // }
 
         const clientId = marketStorageDeal.Proposal.Client;
         const pieceCid = marketStorageDeal.Proposal.PieceCID;

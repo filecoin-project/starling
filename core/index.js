@@ -382,6 +382,7 @@ class StarlingCore extends EventEmitter {
           if (isEncrypted) {
             Logger.info(`move ${path}/decrypted.${NAME}\`, \`${path}/${fileName}`)
             fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${fileName}`, { overwrite: true });
+            fs.removeSync(`${path}/downloaded.${NAME}`);
           } else {
             Logger.info(`move ${path}/downloaded.${NAME}\`, \`${path}/${fileName}`)
             fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${fileName}`, { overwrite: true });
@@ -394,21 +395,23 @@ class StarlingCore extends EventEmitter {
       }));
 
       const filesWithPaths = [];
-      files.forEach( f => filesWithPaths.push(`${path}/${f}`));
+      files.forEach(f => filesWithPaths.push(`${path}/downloaded.${f}`));
       if (numberOfFiles > 1 && allFilesDownloaded) {
         const fileName = data[0].ORIGINAL_NAME;
         splitFile
           .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
           .then(async () => {
+
             filesWithPaths.forEach(path => fs.removeSync(path));
 
             if (isEncrypted) {
               this.emit('DECRYPT_START', fileName);
-              await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
+              await decrypt(`${path}/downloaded.${fileName}`, `${path}/decrypted.${fileName}`, encryptionKey);
             }
 
             if (isEncrypted) {
               fs.moveSync(`${path}/decrypted.${fileName}`, `${path}/${fileName}`, { overwrite: true });
+              fs.removeSync(`${path}/downloaded.${fileName}`);
             } else {
               fs.moveSync(`${path}/downloaded.${fileName}`, `${path}/${fileName}`, { overwrite: true });
             }

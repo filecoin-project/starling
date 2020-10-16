@@ -9,6 +9,7 @@ const { formatBytes, waitTimeout } = require('./application/resource/utils');
 const { encrypt, decrypt } = require('./application/resource/aes');
 const { Logger } = require('./infrastructure/log');
 const { shuffleArray } = require('../core/application/resource/shuffle');
+const { readConfig } = require('../utils/configFunctions');
 const { updateFile, insertFile, connect, close, getFilesByCid, getStoredFileList, getRetrievalFileInfo, getCompleteFileList } = require('./infrastructure/db');
 
 async function getPathInfo(pathName) {
@@ -240,6 +241,7 @@ class StarlingCore extends EventEmitter {
   }
 
   async getMinersAsks() {
+    const config = await readConfig();
     const client = LotusWsClient.shared();
     let miners = await client.listMiners();
     miners = shuffleArray(miners);
@@ -252,11 +254,13 @@ class StarlingCore extends EventEmitter {
         return null;
       }
     }));
-    const formattedStorageAsks = storageAsks.filter(storageAsk => !!storageAsk).map(storageAsk => ({
-      miner: storageAsk.Ask.Miner,
-      askPrice: storageAsk.Ask.Price,
-      minPieceSize: storageAsk.Ask.MinPieceSize,
-      maxPieceSize: storageAsk.Ask.MaxPieceSize,
+    const formattedStorageAsks = storageAsks.filter(storageAsk => {
+      return !!storageAsk && (parseInt(storageAsk.Price) <= parseInt(config.price));
+    }).map(storageAsk => ({
+      miner: storageAsk.Miner,
+      askPrice: storageAsk.Price,
+      minPieceSize: storageAsk.MinPieceSize,
+      maxPieceSize: storageAsk.MaxPieceSize,
     }));
     Logger.info(`[asks] ${JSON.stringify(formattedStorageAsks)}`);
 
@@ -294,7 +298,7 @@ class StarlingCore extends EventEmitter {
         isEncrypted = (ENCRYPTED === 'true');
 
         const status = storageDealProposal.State;
-        if (status != 7 ) {
+        if (status !== 7 && status !== 5) {
           allFilesDownloaded = false;
           this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
           return;
@@ -373,22 +377,43 @@ class StarlingCore extends EventEmitter {
           this.emit('DOWNLOAD_SUCCESS_PIECE', NAME);
         }
 
+        if (numberOfFiles === 1) {
+          const fileName = data[0].ORIGINAL_NAME;
+          if (isEncrypted) {
+            Logger.info(`move ${path}/decrypted.${NAME}\`, \`${path}/${fileName}`)
+            fs.moveSync(`${path}/decrypted.${NAME}`, `${path}/${fileName}`, { overwrite: true });
+            fs.removeSync(`${path}/downloaded.${NAME}`);
+          } else {
+            Logger.info(`move ${path}/downloaded.${NAME}\`, \`${path}/${fileName}`)
+            fs.moveSync(`${path}/downloaded.${NAME}`, `${path}/${fileName}`, { overwrite: true });
+          }
+        }
+
         Logger.info(`completed downloading ${NAME}`);
 
         return;
       }));
 
       const filesWithPaths = [];
-      files.forEach( f => filesWithPaths.push(`${path}/${f}`));
-
+      files.forEach(f => filesWithPaths.push(`${path}/downloaded.${f}`));
       if (numberOfFiles > 1 && allFilesDownloaded) {
         const fileName = data[0].ORIGINAL_NAME;
         splitFile
           .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
           .then(async () => {
+
+            filesWithPaths.forEach(path => fs.removeSync(path));
+
             if (isEncrypted) {
               this.emit('DECRYPT_START', fileName);
-              await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
+              await decrypt(`${path}/downloaded.${fileName}`, `${path}/decrypted.${fileName}`, encryptionKey);
+            }
+
+            if (isEncrypted) {
+              fs.moveSync(`${path}/decrypted.${fileName}`, `${path}/${fileName}`, { overwrite: true });
+              fs.removeSync(`${path}/downloaded.${fileName}`);
+            } else {
+              fs.moveSync(`${path}/downloaded.${fileName}`, `${path}/${fileName}`, { overwrite: true });
             }
             this.emit('DOWNLOAD_SUCCESS', fileName);
             Logger.info(`completed downloading ${fileName}`);
@@ -540,7 +565,7 @@ class StarlingCore extends EventEmitter {
             }
           }
         } else {
-          if (dealInfo['State'] !== 6) {
+          if (dealInfo['State'] !== 7) {
             skippedUuids.push(uuid);
             continue;
           }

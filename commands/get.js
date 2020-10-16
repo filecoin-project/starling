@@ -1,23 +1,14 @@
 const splitFile = require('split-file');
 const chalk = require('chalk');
+const path = require('path');
+const fs = require('fs-extra');
 const figlet = require('figlet');
 const ProgressBar = require('progress');
 const { StarlingCore } = require('../core');
+const { connect, getRetrievalFileInfo } = require('../core/infrastructure/db');
 const { readConfig } = require('../utils');
 const { checkConfig } = require('../utils');
-
-async function checkArgs() {
-  try {
-    const argLength = process.argv.length;
-
-    if (argLength < 5) {
-      return Promise.reject('Please provide at least 2 arguments file uuid and path to store the file (within ipfs root). You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
-    }
-    //check path and uuid
-  } catch (err) {
-    return Promise.reject('unexpected error');
-  }
-}
+const { downloadsPath } = require('../constants/paths');
 
 async function get() {
   try {
@@ -37,24 +28,27 @@ async function get() {
       }
     }
 
-    if (parsedArgs.length < 2) {
-      return Promise.reject('Please provide at least 2 arguments file uuid and path to store the file (within ipfs root). You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
+    if (parsedArgs.length < 1) {
+      return await Promise.reject('Please provide the file UUID. You can specify the copy number as well, otherwise we will retrieve any available copy of the file.');
     }
 
     //check path and uu
     const uuid = parsedArgs[0];
-    const path = parsedArgs[1];
-    const copyNumber = parsedArgs[2];
+    fs.ensureDirSync(downloadsPath);
+    const resolvedPath = path.resolve(downloadsPath);
+    const copyNumber = parsedArgs[1];
     await checkConfig();
     const config = await readConfig();
     const core = new StarlingCore();
     const encryptionKey = config.encryptionKey;
     let numberOfPieces = 1;
     let downloadedPieces = 0;
-
+    const db = await connect();
+    const info = await getRetrievalFileInfo(db, uuid, 1);
     console.log('\nSummary:');
     console.log('----------------------');
     console.log(`file id: ${chalk.yellow(uuid)}`);
+    console.log(`download path: ${chalk.yellow(resolvedPath + '/' + info[0].ORIGINAL_NAME)}`);
     console.log(`encryption: ${chalk.yellow(encryptionKey ? 'enabled' : 'disabled')}`);
 
     const progressBar = new ProgressBar('[:bar] :percent :state', {
@@ -136,7 +130,7 @@ async function get() {
       console.log(`Failed to download, merge failed ${chalk.yellow(fileName)}`);
     });
 
-    await core.get(uuid, path, copyNumber, encryptionKey);
+    await core.get(uuid, resolvedPath, copyNumber, encryptionKey);
 
   } catch (err) {
     console.log(err);

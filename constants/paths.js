@@ -4,6 +4,7 @@ const date = new Date();
 const dbPath = `${homedir}/.starling/starling.db`;
 const configFile = `${homedir}/.starling/config.json`;
 const configPath = `${homedir}/.starling`;
+const downloadsPath = `${homedir}/.starling/downloads`;
 const csvListPath = `${process.cwd()}/starlingList-${date.toISOString()}.csv`;
 const csvVerifyPath = `${process.cwd()}/starlingVerify-${date.toISOString()}.csv`;
 
@@ -12,5 +13,6 @@ module.exports = {
   configPath,
   configFile,
   csvListPath,
-  csvVerifyPath
+  csvVerifyPath,
+  downloadsPath
 };

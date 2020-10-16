@@ -13,7 +13,6 @@ async function insertFile(db, uuid, CID, name, fileSize, formattedSize, index, i
           reject(err);
         } else {
           resolve();
-          Logger.info(`file details successfully added for ${name}`);
         }
       }
     );
@@ -32,7 +31,6 @@ async function updateFile(db, name, { CID, dealID, minerID }, index) {
           Logger.error(err.stack);
         } else {
           resolve();
-          Logger.info(`file details successfully updated for ${name}`);
         }
       }
     );
@@ -203,23 +201,24 @@ function getStorageSpace(db) {
   });
 }
 
-function getRetrievalFileInfo(db, uuid, copyNumber, callback) {
+function getRetrievalFileInfo(db, uuid, copyNumber) {
   let info = [];
 
-  db.each(
-    `SELECT CID,NAME,DEAL_ID,ENCRYPTED,MINER_ID,ORIGINAL_NAME FROM CONTENT WHERE UUID='${uuid}' AND COPY_NUMBER=${copyNumber}`,
-    (err, row) => {
-      if (err) {
-        Logger.error('db error');
-        Logger.error(err.stack);
-      } else {
-        info.push(row);
+  return new Promise((resolve, reject) => {
+    db.each(
+      `SELECT CID,NAME,DEAL_ID,ENCRYPTED,MINER_ID,ORIGINAL_NAME FROM CONTENT WHERE UUID='${uuid}' AND COPY_NUMBER=${copyNumber}`,
+      (err, row) => {
+        if (err) {
+          Logger.error(err.stack);
+        } else {
+          info.push(row);
+        }
+      },
+      function() {
+        resolve(info);
       }
-    },
-    function() {
-      callback(info);
-    }
-  );
+    );
+  });
 }
 
 function getFilteredTableContent(db, param, callback) {
@@ -302,7 +301,6 @@ async function updateFileStatus(
         Logger.error(err);
       } else {
         resolve();
-        Logger.info(`file details successfully updated for ${cid}`);
       }
     });
   });

@@ -39,6 +39,7 @@ LOTUS_URL=ws://<ip address of Filecoin node>/rpc/v0
 LOTUS_AUTH_TOKEN=<Lotus RPC API authorization token with admin permissions>
 ```
 
+One way to find Lotus IP, port number and auth token is `lotus auth api-info --perm admin` command.
 ## Commands
 
 Modify the config file `HOME/.starling/config.json`

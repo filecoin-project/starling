@@ -90,9 +90,9 @@ class LotusWsClient {
     );
   }
 
-  async clientFindData(dataCid) {
+  async clientFindData(pieceCid, dataCid) {
     await this.whenReady();
-    return this.client.call('Filecoin.ClientFindData', [dataCid]
+    return this.client.call('Filecoin.ClientFindData', [dataCid, pieceCid]
     );
   }
 

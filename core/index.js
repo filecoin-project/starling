@@ -22,7 +22,7 @@ async function getPathInfo(pathName) {
         status: 'file',
         fileName,
         fileSize,
-        pathName,
+        pathName: path.resolve(pathName),
       };
     } else if (stats.isDirectory()) {
       return {
@@ -73,24 +73,30 @@ class StarlingCore extends EventEmitter {
   }
 
   async makeDeals(importedFiles, miners, noOfCopies, db, basePrice) {
-    for (let importedFile of importedFiles) {
-      for (let miner of miners) {
+    let i = 0;
+    const noOfSplits = importedFiles.length / noOfCopies;
+
+    while (i < miners.length && i < noOfCopies) {
+      const filteredFiles = importedFiles.filter((file, idx) => {
+        return idx >= i * noOfSplits && idx <= i * noOfSplits + noOfSplits - 1;
+      });
+      for (let importedFile of filteredFiles) {
         try {
           await this.proposeDeal(
             db,
             importedFile.cid,
             importedFile.fileName,
             importedFile.fileSize,
-            miner.miner,
+            miners[i].miner,
             basePrice,
             importedFile.copyNumber,
           );
-          break;
         } catch (err) {
           Logger.error(err);
+          throw new Error('Storage deal failed');
         }
       }
-
+      i++;
     }
   }
 
@@ -105,6 +111,12 @@ class StarlingCore extends EventEmitter {
       await waitTimeout(1);
       this.emit('STORE_FIND_MINERS_STARTED');
       const miners = await this.getMinersAsks();
+      Logger.info(`[${pathInfo.pathName}]: ${miners.length} miners`);
+
+      if (miners.length === 0) {
+        this.emit('ERROR', "No miners found!");
+        return;
+      }
       const sectorSize = (miners[0].maxPieceSize + miners[0].minPieceSize) / 2;
 
       pathInfo = await getPathInfo(pathName);
@@ -122,10 +134,12 @@ class StarlingCore extends EventEmitter {
       if (sectorSize < pathInfo.fileSize) {
         this.emit('STORE_FILE_SPLIT_STARTED');
         pathInfosForImport = await this.splitFiles(pathInfo.pathName, sectorSize);
+        Logger.info(`[split] sector size`)
       }
 
       this.emit('STORE_IMPORT_STARTED');
       const importedFiles = await this.importFiles(pathInfosForImport, db, !!encryptionKey, originalName, noOfCopies);
+      Logger.info(`[imported]: ${importedFiles.map(imported => ([ imported.cid['/'], imported.pathName ]))}`);
 
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
@@ -148,23 +162,14 @@ class StarlingCore extends EventEmitter {
   ) {
     const client = LotusWsClient.shared();
     const price = Math.ceil((basePrice * size) / (1024 * 1024 * 1024));
-    Logger.info('start deal');
-    Logger.info({
-      cid,
-      miner,
-      price
-    });
+    Logger.info(`[deal start]: cid: ${cid['/']}, miner: ${miner}, copy: ${copyIdx}`);
     const dealCid = await client.clientStartDeal(
       cid,
       miner,
       price + (copyIdx - 1),
-      80640
+      806400
     );
     const storageDealProposal = await client.clientGetDealInfo(dealCid);
-    Logger.info('deal info');
-    Logger.info({
-      storageDealProposal,
-    });
     const deal = {
       dealID: JSON.stringify(dealCid),
       minerID: miner,
@@ -204,7 +209,7 @@ class StarlingCore extends EventEmitter {
     const cid = await client.clientImport(pathInfo.pathName, false);
     const formattedSize = formatBytes(pathInfo.fileSize);
 
-    const existingFiles = await getFilesByCid(db, JSON.stringify(cid));
+    const existingFiles = await getFilesByCid(db, JSON.stringify(cid.Root));
     let copyNumber;
     let validUuid = uuid;
 
@@ -217,11 +222,11 @@ class StarlingCore extends EventEmitter {
       validUuid = existingFiles[0].UUID;
     }
 
-    await insertFile(db, validUuid, JSON.stringify(cid), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
+    await insertFile(db, validUuid, JSON.stringify(cid.Root), pathInfo.fileName, pathInfo.fileSize, formattedSize, copyNumber, isEncrypted, originalName);
 
     return {
       ...pathInfo,
-      cid,
+      cid: cid.Root,
       copyNumber,
     };
   }
@@ -253,7 +258,8 @@ class StarlingCore extends EventEmitter {
       minPieceSize: storageAsk.Ask.MinPieceSize,
       maxPieceSize: storageAsk.Ask.MaxPieceSize,
     }));
-    Logger.info('asks', formattedStorageAsks);
+    Logger.info(`[asks] ${JSON.stringify(formattedStorageAsks)}`);
+
     return formattedStorageAsks;
   }
 
@@ -268,129 +274,135 @@ class StarlingCore extends EventEmitter {
         anyCopy = true;
       }
 
-      await getRetrievalFileInfo(db, uuid, copyNumber, async data => {
-        const numberOfFiles = data.length;
-        let allFilesDownloaded = true;
-        let files = [];
-        let isEncrypted = false;
+      const data = await getRetrievalFileInfo(db, uuid, copyNumber);
+      const numberOfFiles = data.length;
+      let allFilesDownloaded = true;
+      let files = [];
+      let isEncrypted = false;
 
-        if (numberOfFiles == 0) {
-          this.emit('ERROR', `No files found for uuid: ${uuid}, copy number: ${copyNumber}`);
+      if (numberOfFiles == 0) {
+        this.emit('ERROR', `No files found for uuid: ${uuid}, copy number: ${copyNumber}`);
+        return;
+      }
+
+      this.emit('DOWNLOAD_START', {fileName: data[0].ORIGINAL_NAME, numberOfPieces: numberOfFiles});
+
+      await Promise.all( data.map(async (file) => {
+        const { CID, NAME, DEAL_ID, ENCRYPTED, MINER_ID } = file;
+        const storageDealProposal = await client.clientGetDealInfo(JSON.parse(DEAL_ID)).catch(err => this.emit('ERROR', err) );
+        const marketStorageDeal = await client.stateMarketStorageDeal(storageDealProposal.DealID).catch(err => this.emit('ERROR', err) );
+        isEncrypted = (ENCRYPTED === 'true');
+
+        const status = storageDealProposal.State;
+        if (status != 7 ) {
+          allFilesDownloaded = false;
+          this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
           return;
         }
 
-        this.emit('DOWNLOAD_START', {fileName: data[0].ORIGINAL_NAME, numberOfPieces: numberOfFiles});
-        await Promise.all( data.map(async (file) => {
-          const { CID, NAME, DEAL_ID, ENCRYPTED, MINER_ID } = file;
-          const storageDealProposal = await client.clientGetDealInfo(JSON.parse(DEAL_ID)).catch(err => this.emit('ERROR', err) );
-          const marketStorageDeal = await client.stateMarketStorageDeal(storageDealProposal.DealID).catch(err => this.emit('ERROR', err) );
-          isEncrypted = (ENCRYPTED === 'true');
+        const clientId = marketStorageDeal.Proposal.Client;
+        const pieceCid = marketStorageDeal.Proposal.PieceCID;
 
-          const status = storageDealProposal.State;
-          if (status != 6 ) {
-            allFilesDownloaded = false;
-            this.emit('ERROR_PIECE', `Deal not active for ${NAME}`);
-            return;
+        files.push(NAME);
+
+        if (numberOfFiles > 1) {
+          this.emit('DOWNLOAD_START_PIECE', NAME);
+        }
+        Logger.info(`started downloading ${NAME}`);
+
+        const allOffers = await client.clientFindData(pieceCid, JSON.parse(CID)).catch(e => {console.log(e)});
+        if (allOffers.length === 0) {
+          this.emit('ERROR_PIECE', `Couldn't find any retrieval offers for ${NAME}`);
+          Logger.info(`failed to download ${NAME}`);
+          return;
+        }
+
+        const offer = allOffers.filter( item => {
+          let isValid = false;
+          if (item.Size > 0) isValid = true;
+
+          if (!anyCopy) {
+            if (item.Miner === MINER_ID) isValid = true;
+            else isValid = false;
           }
 
-          const clientId = marketStorageDeal.Proposal.Client;
+          return isValid;
+        })
 
-          files.push(NAME);
+        if (offer.length === 0) {
+          this.emit('ERROR_PIECE', `Couldn't find any valid (size >0) retrieval offers for ${NAME}`);
+          Logger.info(`failed to download ${NAME}`);
+          return;
+        }
 
-          if (numberOfFiles > 1) {
-            this.emit('DOWNLOAD_START_PIECE', NAME);
-          }
-          Logger.info(`started downloading ${NAME}`);
+        const retrievalOrder = {
+          Root: offer[0].Root,
+          Piece: offer[0].Piece,
+          UnsealPrice: offer[0].UnsealPrice,
+          Size: offer[0].Size,
+          Total: offer[0].MinPrice,
 
-          const allOffers = await client.clientFindData(JSON.parse(CID));
-          if (allOffers.length === 0) {
-            this.emit('ERROR_PIECE', `Couldn't find any retrieval offers for ${NAME}`);
-            Logger.info(`failed to download ${NAME}`);
-            return;
-          }
+          PaymentInterval: offer[0].PaymentInterval,
+          PaymentIntervalIncrease: offer[0].PaymentIntervalIncrease,
 
-          const offer = allOffers.filter( item => {
-            let isValid = false;
-            if (item.Size > 0) isValid = true;
-
-            if (!anyCopy) {
-              if (item.Miner === MINER_ID) isValid = true;
-              else isValid = false;
-            }
-
-            return isValid;
-          })
-
-          if (offer.length === 0) {
-            this.emit('ERROR_PIECE', `Couldn't find any valid (size >0) retrieval offers for ${NAME}`);
-            Logger.info(`failed to download ${NAME}`);
-            return;
-          }
-
-          const retrievalOrder = {
-            Root: offer[0].Root,
-            Size: offer[0].Size,
-            Total: offer[0].MinPrice,
-            PaymentInterval: offer[0].PaymentInterval,
-            PaymentIntervalIncrease: offer[0].PaymentIntervalIncrease,
-            Client: clientId,
-            Miner: offer[0].Miner,
-            MinerPeerID: offer[0].MinerPeerID,
-          }
-          const err = await client.clientRetrieve(retrievalOrder, `${path}/downloaded.${NAME}`).catch(err => this.emit('ERROR', err) );
-          if (err) {
-            allFilesDownloaded = false;
-            if (numberOfFiles === 1) {
-              this.emit('DOWNLOAD_FAIL', NAME);
-            } else {
-              this.emit('DOWNLOAD_FAIL_PIECE', NAME);
-            }
-            Logger.info(`failed to download ${NAME}`);
-            Logger.info(JSON.stringify(err));
-            return;
-          }
-
-          if (numberOfFiles === 1 && isEncrypted) {
-            this.emit('DECRYPT_START', NAME);
-            await decrypt(`${path}/downloaded.${NAME}`,`${path}/decrypted.${NAME}`, encryptionKey);
-          }
-
+          Client: clientId,
+          Miner: offer[0].Miner,
+          MinerPeer: offer[0].MinerPeer,
+        }
+        const err = await client.clientRetrieve(retrievalOrder, `${path}/downloaded.${NAME}`).catch(err => this.emit('ERROR', err) );
+        if (err) {
+          allFilesDownloaded = false;
           if (numberOfFiles === 1) {
-            this.emit('DOWNLOAD_SUCCESS', NAME);
+            this.emit('DOWNLOAD_FAIL', NAME);
           } else {
-            this.emit('DOWNLOAD_SUCCESS_PIECE', NAME);
+            this.emit('DOWNLOAD_FAIL_PIECE', NAME);
           }
-
-          Logger.info(`completed downloading ${NAME}`);
-
+          Logger.info(`failed to download ${NAME}`);
+          Logger.info(JSON.stringify(err));
           return;
-        }));
-
-        const filesWithPaths = [];
-        files.forEach( f => filesWithPaths.push(`${path}/${f}`));
-
-        if (numberOfFiles > 1 && allFilesDownloaded) {
-          const fileName = data[0].ORIGINAL_NAME;
-          splitFile
-            .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
-            .then(async () => {
-              if (isEncrypted) {
-                this.emit('DECRYPT_START', fileName);
-                await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
-              }
-              this.emit('DOWNLOAD_SUCCESS', fileName);
-              Logger.info(`completed downloading ${fileName}`);
-
-            })
-            .catch(err => {
-              this.emit('DOWNLOAD_MERGE_ERROR', fileName);
-              Logger.error(err);
-            });
         }
-      });
+
+        if (numberOfFiles === 1 && isEncrypted) {
+          this.emit('DECRYPT_START', NAME);
+          await decrypt(`${path}/downloaded.${NAME}`,`${path}/decrypted.${NAME}`, encryptionKey);
+        }
+
+        if (numberOfFiles === 1) {
+          this.emit('DOWNLOAD_SUCCESS', NAME);
+        } else {
+          this.emit('DOWNLOAD_SUCCESS_PIECE', NAME);
+        }
+
+        Logger.info(`completed downloading ${NAME}`);
+
+        return;
+      }));
+
+      const filesWithPaths = [];
+      files.forEach( f => filesWithPaths.push(`${path}/${f}`));
+
+      if (numberOfFiles > 1 && allFilesDownloaded) {
+        const fileName = data[0].ORIGINAL_NAME;
+        splitFile
+          .mergeFiles(filesWithPaths, `${path}/downloaded.${fileName}`)
+          .then(async () => {
+            if (isEncrypted) {
+              this.emit('DECRYPT_START', fileName);
+              await decrypt(`${path}/downloaded.${fileName}`,`${path}/decrypted.${fileName}`, encryptionKey);
+            }
+            this.emit('DOWNLOAD_SUCCESS', fileName);
+            Logger.info(`completed downloading ${fileName}`);
+
+          })
+          .catch(err => {
+            this.emit('DOWNLOAD_MERGE_ERROR', fileName);
+            Logger.error(err);
+          });
+      }
+
       close(db);
     } catch (err) {
-      console.log(err);
+      this.emit('ERROR', err);
       Logger.error(err.stack);
     }
   }
@@ -439,7 +451,7 @@ class StarlingCore extends EventEmitter {
         const status = this.getReportStatus(files);
 
         const size = files.reduce((acc, file) => file.COPY_NUMBER === 1 ? acc + file.SIZE_BYTES : acc, 0);
-        const encryption = files[0].ENCRYPTED ? 'enabled' : 'disabled';
+        const encryption = files[0].ENCRYPTED === 'true' ? 'enabled' : 'disabled';
         const date = files[0].DATETIME_STARTED;
         const totalCopies = files.reduce((acc, file) => file.COPY_NUMBER > acc ? file.COPY_NUMBER : acc, 0);
         return {
@@ -482,7 +494,7 @@ class StarlingCore extends EventEmitter {
         const name = files[0].ORIGINAL_NAME;
         const status = this.getReportStatus(files);
         const size = files.reduce((acc, file) => file.COPY_NUMBER === 1 ? acc + file.SIZE_BYTES : acc, 0);
-        const encryption = files[0].ENCRYPTED ? 'enabled' : 'disabled';
+        const encryption = files[0].ENCRYPTED === 'true' ? 'enabled' : 'disabled';
         const date = files[0].DATETIME_STARTED;
         const totalCopies = files.reduce((acc, file) => file.COPY_NUMBER > acc ? file.COPY_NUMBER : acc, 0);
 

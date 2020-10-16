@@ -565,7 +565,7 @@ class StarlingCore extends EventEmitter {
             }
           }
         } else {
-          if (dealInfo['State'] !== 6) {
+          if (dealInfo['State'] !== 7) {
             skippedUuids.push(uuid);
             continue;
           }

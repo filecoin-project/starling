@@ -22,10 +22,9 @@ class LotusWsClient {
 
   static shared() {
     if (!this.instance) {
-      getLotusUrl().then(url => {
-        Logger.info(`url`, url);
-        this.instance = new LotusWsClient(url);
-      });
+      const url = getLotusUrl();
+      Logger.info(`url`, url);
+      this.instance = new LotusWsClient(url);
     }
 
     return this.instance;

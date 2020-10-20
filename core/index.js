@@ -262,9 +262,10 @@ class StarlingCore extends EventEmitter {
       minPieceSize: storageAsk.MinPieceSize,
       maxPieceSize: storageAsk.MaxPieceSize,
     }));
-    Logger.info(`[asks] ${JSON.stringify(formattedStorageAsks)}`);
+    const sortedStorageAsks = formattedStorageAsks.sort((ask1, ask2) => ask2.maxPieceSize - ask1.maxPieceSize);
+    Logger.info(`[asks] ${JSON.stringify(sortedStorageAsks)}`);
 
-    return formattedStorageAsks;
+    return sortedStorageAsks;
   }
 
   async get(uuid, path, copyNumber, encryptionKey) {

@@ -1,15 +1,10 @@
 const { Client } = require('rpc-websockets');
+const { getLotusUrl } = require('./address');
 
 class LotusWsClient {
-  constructor(lotusUrl, authToken) {
-    let fullUrl = `${lotusUrl}`;
-
-    if (authToken) {
-      fullUrl = fullUrl + `?token=${authToken}`;
-    }
-
+  constructor(lotusUrl) {
     this.ready = false;
-    this.client = new Client(fullUrl);
+    this.client = new Client(lotusUrl);
     this.client.on('open', () => {
       this.ready = true;
       // console.log('Lotus connection established!\n');
@@ -27,10 +22,9 @@ class LotusWsClient {
 
   static shared() {
     if (!this.instance) {
-      this.instance = new LotusWsClient(
-        process.env.LOTUS_URL,
-        process.env.LOTUS_AUTH_TOKEN,
-      );
+      getLotusUrl().then(url => {
+        this.instance = new LotusWsClient(url);
+      });
     }
 
     return this.instance;

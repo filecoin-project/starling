@@ -1,6 +1,6 @@
 const { Client } = require('rpc-websockets');
 const { getLotusUrl } = require('./address');
-
+const { Logger } = require('../log');
 class LotusWsClient {
   constructor(lotusUrl) {
     this.ready = false;
@@ -23,6 +23,7 @@ class LotusWsClient {
   static shared() {
     if (!this.instance) {
       getLotusUrl().then(url => {
+        Logger.info(`url`, url);
         this.instance = new LotusWsClient(url);
       });
     }

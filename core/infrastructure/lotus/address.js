@@ -2,10 +2,10 @@ const multiaddr = require('multiaddr');
 const { lotusApiTokenPath, lotusApiPath } = require('../../../constants/paths');
 var fs = require('fs');
 
-async function getLotusUrl() {
+function getLotusUrl() {
   try {
-    const token = await readFile(lotusApiTokenPath);
-    const multiAddrString = await readFile(lotusApiPath);
+    const token = fs.readFileSync(lotusApiTokenPath, 'utf8');
+    const multiAddrString = fs.readFileSync(lotusApiPath, 'utf8');
     const addr = multiaddr(multiAddrString);
     const nodeAddr = addr.nodeAddress();
 
@@ -13,18 +13,6 @@ async function getLotusUrl() {
   } catch (error) {
     return "";
   }
-}
-
-function readFile(path) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(path, 'utf8', (err, data) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data);
-      }
-    });
-  });
 }
 
 module.exports = {

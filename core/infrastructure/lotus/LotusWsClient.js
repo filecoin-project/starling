@@ -23,7 +23,6 @@ class LotusWsClient {
   static shared() {
     if (!this.instance) {
       const url = getLotusUrl();
-      Logger.info(`url ${url}`);
       this.instance = new LotusWsClient(url);
     }
 

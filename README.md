@@ -32,14 +32,10 @@ Starling uses an [sqlite3](https://www.npmjs.com/package/sqlite3) database. The 
 
 ## API Address Config
 
-In order to connect to a filecoin node, create a `.env` file in the root directory of the project with the following variables:
+Starling uses the Lotus configuration files for getting the API's url and authorization token (~/.lotus/api and ~/.lotus/token).
+Please make sure that an authorization token with admin permissions has been generated beforehand (`lotus auth api-info --perm admin`)
 
-```j
-LOTUS_URL=ws://<ip address of Filecoin node>/rpc/v0
-LOTUS_AUTH_TOKEN=<Lotus RPC API authorization token with admin permissions>
-```
-
-One way to find Lotus IP, port number and auth token is `lotus auth api-info --perm admin` command.
+Starling will use the optional `FULLNODE_API_INFO` variable in case it has been set. 
 ## Commands
 
 Modify the config file `HOME/.starling/config.json`

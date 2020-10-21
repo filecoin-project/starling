@@ -145,6 +145,17 @@ class StarlingCore extends EventEmitter {
       this.emit('STORE_DEALS_STARTED');
       await this.makeDeals(importedFiles, miners, noOfCopies, db, basePrice);
 
+      if (encryptionKey) {
+        const encryptedPathName = `${pathName}-encrypted`;
+        fs.removeSync(encryptedPathName);
+      }
+
+      if (sectorSize < pathInfo.fileSize) {
+        pathInfosForImport.forEach(pathInfo => {
+          fs.removeSync(pathInfo.pathName);
+        });
+      }
+
       this.emit('STORE_DONE');
       close(db);
     } catch (error) {

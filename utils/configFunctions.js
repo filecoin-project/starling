@@ -29,6 +29,10 @@ async function createConfig(init) {
   } else {
     responses.encryptionKey = generateEncryptionKey(responses.encryptionKey);
   }
+
+  if (responses.miners) {
+    responses.miners = responses.miners.split(",");
+  }
   const json = JSON.stringify(responses);
 
   fs.writeFile(configFile, json, 'utf8');

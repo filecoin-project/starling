@@ -254,11 +254,15 @@ class StarlingCore extends EventEmitter {
   async getMinersAsks() {
     const config = await readConfig();
     const client = LotusWsClient.shared();
-    let miners = await client.listMiners();
+    const lotusMiners = await client.listMiners();
+    let priorityMiners = config.miners;
+    let miners = lotusMiners.filter(miner => !priorityMiners.includes(miner));
     miners = shuffleArray(miners);
-    const infos = await Promise.all(miners.map(miner => client.minerInfo(miner)));
+    priorityMiners = lotusMiners.filter(miner => priorityMiners.includes(miner));
+    const unionMiners = [...priorityMiners, ...miners];
+    const infos = await Promise.all(unionMiners.map(miner => client.minerInfo(miner)));
     const peerIds = infos.map(info => info.PeerId);
-    const storageAsks = await Promise.all(miners.map(async (miner, idx) => {
+    const storageAsks = await Promise.all(unionMiners.map(async (miner, idx) => {
       try {
         return await this.getMinerAsk(peerIds[idx], miner);
       } catch (error) {
@@ -273,10 +277,13 @@ class StarlingCore extends EventEmitter {
       minPieceSize: storageAsk.MinPieceSize,
       maxPieceSize: storageAsk.MaxPieceSize,
     }));
-    const sortedStorageAsks = formattedStorageAsks.sort((ask1, ask2) => ask2.maxPieceSize - ask1.maxPieceSize);
-    Logger.info(`[asks] ${JSON.stringify(sortedStorageAsks)}`);
+    const priorityStorageAsks = formattedStorageAsks.filter(storageAsk => priorityMiners.includes(storageAsk.miner));
+    const restStorageAsks = formattedStorageAsks.filter(storageAsk => !priorityMiners.includes(storageAsk.miner));
+    const sortedStorageAsks = restStorageAsks.sort((ask1, ask2) => ask2.maxPieceSize - ask1.maxPieceSize);
+    const finalStorageAsks = [...priorityStorageAsks, ...sortedStorageAsks];
+    Logger.info(`[asks] ${JSON.stringify(finalStorageAsks)}`);
 
-    return sortedStorageAsks;
+    return finalStorageAsks;
   }
 
   async get(uuid, path, copyNumber, encryptionKey) {

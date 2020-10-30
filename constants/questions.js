@@ -49,6 +49,26 @@ const questions = [
       return true;
     }
   },
+  {
+    type: 'input',
+    name: 'miners',
+    message:
+      `You can provide a list of miners who will have priority in establishing storage deals (eg. t01000,t02000,t24111)`,
+    default: function() {
+      return '';
+    },
+    validate: function(answer) {
+      if (answer.length === 0) {
+        return true;
+      }
+
+      if (/^[a-zA-Z0-9,]*$/.test(answer)) {
+        return true;
+      }
+
+      return 'Miners should be provided as a string, separated by commas';
+    }
+  },
 ];
 
 module.exports = {
